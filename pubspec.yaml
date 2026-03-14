@@ -1,0 +1,53 @@
+name: iron_rep
+description: "IronRep — Fitness Workout Tracker"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Database
+  drift: ^2.22.1
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
+
+  # Navigation
+  go_router: ^15.1.2
+
+  # Charts
+  fl_chart: ^0.70.2
+
+  # Monetization
+  google_mobile_ads: ^5.3.0
+  in_app_purchase: ^3.2.0
+
+  # Notifications (rest timer)
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.1
+
+  # UI
+  flutter_animate: ^4.5.2
+
+  # Settings
+  shared_preferences: ^2.3.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.14
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/equipment/
