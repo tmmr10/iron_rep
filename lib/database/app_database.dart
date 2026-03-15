@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase._();
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +122,41 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               "UPDATE exercises SET name = 'Reverse Fly' WHERE name_key = 'reverse_fly'",
             );
+          }
+          if (from < 7) {
+            // Rückenstrecker: alle Gewichte löschen (hat kein Gewicht)
+            await customStatement('''
+              UPDATE workout_sets SET weight = NULL
+              WHERE workout_exercise_id IN (
+                SELECT we.id FROM workout_exercises we
+                JOIN exercises e ON we.exercise_id = e.id
+                WHERE e.name LIKE '%ückenstreck%' OR e.name LIKE '%ückstreck%'
+              )
+            ''');
+            // Rückenstrecker: Personal Records löschen
+            await customStatement('''
+              DELETE FROM personal_records
+              WHERE exercise_id IN (
+                SELECT id FROM exercises
+                WHERE name LIKE '%ückenstreck%' OR name LIKE '%ückstreck%'
+              )
+            ''');
+            // Bizeps Maschine: alte Langhantel-Curls Daten löschen (Gewicht < 20kg = alte Barbell-Daten)
+            await customStatement('''
+              UPDATE workout_sets SET weight = NULL
+              WHERE weight < 20 AND weight IS NOT NULL AND workout_exercise_id IN (
+                SELECT we.id FROM workout_exercises we
+                JOIN exercises e ON we.exercise_id = e.id
+                WHERE e.name_key = 'bicep_machine'
+              )
+            ''');
+            // Bizeps Maschine: Personal Records neu berechnen lassen
+            await customStatement('''
+              DELETE FROM personal_records
+              WHERE exercise_id IN (
+                SELECT id FROM exercises WHERE name_key = 'bicep_machine'
+              )
+            ''');
           }
         },
       );

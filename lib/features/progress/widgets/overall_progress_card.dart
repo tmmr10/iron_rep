@@ -120,12 +120,6 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
                   ),
                   const SizedBox(width: 8),
                   _MetricChip(
-                    label: 'Frequenz',
-                    value: data.frequencyChange,
-                    icon: Icons.calendar_today,
-                  ),
-                  const SizedBox(width: 8),
-                  _MetricChip(
                     label: 'Gewicht',
                     value: data.avgWeightChange,
                     icon: Icons.fitness_center,
