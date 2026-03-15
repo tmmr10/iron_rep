@@ -8,6 +8,7 @@ class WorkoutSummary {
   final int totalSets;
   final double totalVolume;
   final int prCount;
+  final int skippedCount;
 
   const WorkoutSummary({
     required this.workoutId,
@@ -19,6 +20,7 @@ class WorkoutSummary {
     required this.totalSets,
     required this.totalVolume,
     this.prCount = 0,
+    this.skippedCount = 0,
   });
 
   String get durationFormatted {

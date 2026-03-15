@@ -62,6 +62,42 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
     return into(exerciseEquipment).insert(entry);
   }
 
+  Future<void> updateExercise(
+    int id, {
+    String? name,
+    String? primaryMuscleGroup,
+    String? category,
+    Value<String?>? instructions,
+    bool? trackWeight,
+  }) async {
+    final companion = ExercisesCompanion(
+      name: name != null ? Value(name) : const Value.absent(),
+      primaryMuscleGroup: primaryMuscleGroup != null
+          ? Value(primaryMuscleGroup)
+          : const Value.absent(),
+      category: category != null ? Value(category) : const Value.absent(),
+      instructions: instructions ?? const Value.absent(),
+      trackWeight:
+          trackWeight != null ? Value(trackWeight) : const Value.absent(),
+    );
+    await (update(exercises)..where((t) => t.id.equals(id))).write(companion);
+  }
+
+  Future<void> replaceEquipment(
+      int exerciseId, List<String> equipmentTypes) async {
+    await (delete(exerciseEquipment)
+          ..where((t) => t.exerciseId.equals(exerciseId)))
+        .go();
+    for (final eq in equipmentTypes) {
+      await into(exerciseEquipment).insert(
+        ExerciseEquipmentCompanion.insert(
+          exerciseId: exerciseId,
+          equipmentType: eq,
+        ),
+      );
+    }
+  }
+
   Future<bool> hasExercises() async {
     final count = await (selectOnly(exercises)
           ..addColumns([exercises.id.count()]))

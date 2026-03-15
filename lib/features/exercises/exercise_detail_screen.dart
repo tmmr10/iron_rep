@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/exercise_providers.dart';
 import '../../shared/design_system.dart';
-import '../../shared/widgets/equipment_image.dart';
 import '../../shared/widgets/iron_card.dart';
 import '../../shared/widgets/muscle_group_chip.dart';
+import 'edit_exercise_sheet.dart';
 
 class ExerciseDetailScreen extends ConsumerWidget {
   final int exerciseId;
@@ -15,118 +15,167 @@ class ExerciseDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final exerciseAsync = ref.watch(exerciseWithEquipmentProvider(exerciseId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercise')),
+      appBar: AppBar(
+        title: const Text(''),
+        actions: [
+          exerciseAsync.whenOrNull(
+                data: (exercise) => IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () async {
+                    final saved = await showModalBottomSheet<bool>(
+                      context: context,
+                      isScrollControlled: true,
+                      isDismissible: false,
+                      enableDrag: false,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => DraggableScrollableSheet(
+                        initialChildSize: 0.85,
+                        minChildSize: 0.5,
+                        maxChildSize: 0.95,
+                        builder: (ctx, scrollController) => Container(
+                          decoration: BoxDecoration(
+                            color: c.surface,
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20)),
+                          ),
+                          child: EditExerciseSheet(
+                            exercise: exercise,
+                            scrollController: scrollController,
+                          ),
+                        ),
+                      ),
+                    );
+                    if (saved == true) {
+                      ref.invalidate(
+                          exerciseWithEquipmentProvider(exerciseId));
+                    }
+                  },
+                ),
+              ) ??
+              const SizedBox.shrink(),
+        ],
+      ),
       body: exerciseAsync.when(
         data: (exercise) => ListView(
           padding: IronRepSpacing.screenPadding,
           children: [
-            // Equipment image
-            if (exercise.primaryEquipment != null)
-              Center(
-                child: EquipmentImage(
-                  equipment: exercise.primaryEquipment!,
-                  size: 160,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/exercises/${exercise.nameKey}.jpg',
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            const SizedBox(height: IronRepSpacing.xl),
+            ),
 
+            // Name
             Text(exercise.name,
                 style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: IronRepSpacing.sm),
+            const SizedBox(height: 12),
 
-            Wrap(
-              spacing: 8,
+            // Tags
+            Row(
               children: [
                 MuscleGroupChip(
                     muscleGroup: exercise.muscleGroup, isSelected: true),
-                Chip(
-                  label: Text(exercise.category.label),
-                  backgroundColor: IronRepColors.elevated,
-                  labelStyle: const TextStyle(
-                      color: IronRepColors.textSecondary, fontSize: 13),
-                  side: BorderSide.none,
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: c.elevated,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    exercise.category.label,
+                    style: TextStyle(color: c.textMuted, fontSize: 12),
+                  ),
                 ),
               ],
             ),
 
+            // Instructions
             if (exercise.instructions != null) ...[
-              const SizedBox(height: IronRepSpacing.xl),
-              IronCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Instructions',
-                        style: TextStyle(
-                          color: IronRepColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        )),
-                    const SizedBox(height: 8),
-                    Text(
-                      exercise.instructions!,
-                      style: const TextStyle(
-                        color: IronRepColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              Text(
+                'Anleitung',
+                style: TextStyle(
+                  color: c.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                exercise.instructions!,
+                style: TextStyle(
+                  color: c.textPrimary,
+                  height: 1.5,
+                  fontSize: 15,
                 ),
               ),
             ],
 
+            // Equipment
             if (exercise.equipment.isNotEmpty) ...[
-              const SizedBox(height: IronRepSpacing.lg),
-              IronCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Equipment',
-                        style: TextStyle(
-                          color: IronRepColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        )),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: exercise.equipment
-                          .map((e) => Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  EquipmentImage(
-                                      equipment: e, size: 32),
-                                  const SizedBox(width: 8),
-                                  Text(e.label,
-                                      style: const TextStyle(
-                                          color: IronRepColors
-                                              .textSecondary)),
-                                ],
-                              ))
-                          .toList(),
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              Text(
+                'Geräte',
+                style: TextStyle(
+                  color: c.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: exercise.equipment
+                    .map((e) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: c.elevated,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            e.label,
+                            style: TextStyle(
+                                color: c.textPrimary, fontSize: 13),
+                          ),
+                        ))
+                    .toList(),
               ),
             ],
 
-            const SizedBox(height: IronRepSpacing.lg),
+            const SizedBox(height: 32),
             OutlinedButton.icon(
               onPressed: () =>
                   context.push('/exercise-progress/$exerciseId'),
               icon: const Icon(Icons.show_chart),
-              label: const Text('View Progress'),
+              label: const Text('Fortschritt anzeigen'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: IronRepColors.accent,
-                side: const BorderSide(color: IronRepColors.accent),
+                foregroundColor: c.accent,
+                side: BorderSide(color: c.accent),
               ),
             ),
           ],
         ),
         loading: () =>
             const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text('Fehler: $e')),
       ),
     );
   }

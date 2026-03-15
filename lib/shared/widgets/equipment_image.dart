@@ -15,18 +15,19 @@ class EquipmentImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final path = equipment.assetPath;
     if (path == null) {
       return Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: IronRepColors.elevated,
+          color: c.elevated,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           Icons.fitness_center,
-          color: IronRepColors.textMuted,
+          color: c.textMuted,
           size: size * 0.4,
         ),
       );
@@ -42,10 +43,10 @@ class EquipmentImage extends StatelessWidget {
         errorBuilder: (_, __, ___) => Container(
           width: size,
           height: size,
-          color: IronRepColors.elevated,
+          color: c.elevated,
           child: Icon(
             Icons.fitness_center,
-            color: IronRepColors.textMuted,
+            color: c.textMuted,
             size: size * 0.4,
           ),
         ),

@@ -14,6 +14,7 @@ class ExerciseSeedData {
         instructions: Value(e.instructions),
         primaryMuscleGroup: e.muscleGroup,
         category: e.category,
+        trackWeight: Value(e.trackWeight),
       ));
       for (final eq in e.equipment) {
         await dao.insertEquipment(ExerciseEquipmentCompanion.insert(
@@ -23,6 +24,83 @@ class ExerciseSeedData {
       }
     }
   }
+
+  static Future<void> seedMissing(AppDatabase db) async {
+    final dao = db.exerciseDao;
+    for (final e in _exercises) {
+      final existing = await dao.getByNameKey(e.nameKey);
+      if (existing == null) {
+        final id = await dao.insertExercise(ExercisesCompanion.insert(
+          name: e.name,
+          nameKey: e.nameKey,
+          instructions: Value(e.instructions),
+          primaryMuscleGroup: e.muscleGroup,
+          category: e.category,
+          trackWeight: Value(e.trackWeight),
+        ));
+        for (final eq in e.equipment) {
+          await dao.insertEquipment(ExerciseEquipmentCompanion.insert(
+            exerciseId: id,
+            equipmentType: eq.name,
+          ));
+        }
+      }
+    }
+  }
+
+  /// Map of English name → German name for migration
+  static const nameTranslations = {
+    'Bench Press': 'Bankdrücken',
+    'Incline Bench Press': 'Schrägbankdrücken',
+    'Dumbbell Chest Press': 'Kurzhantel-Brustdrücken',
+    'Cable Fly': 'Kabelzug-Flys',
+    'Machine Chest Press': 'Maschinen-Brustpresse',
+    'Push-ups': 'Liegestütze',
+    'Barbell Row': 'Langhantel-Rudern',
+    'Lat Pulldown': 'Latzug',
+    'Seated Cable Row': 'Kabelrudern sitzend',
+    'Dumbbell Row': 'Kurzhantel-Rudern',
+    'Pull-ups': 'Klimmzüge',
+    'T-Bar Row': 'T-Bar-Rudern',
+    'Overhead Press': 'Schulterdrücken',
+    'Lateral Raise': 'Seitheben',
+    'Front Raise': 'Frontheben',
+    'Face Pull': 'Face Pull',
+    'Machine Shoulder Press': 'Maschinen-Schulterdrücken',
+    'Barbell Curl': 'Langhantel-Curls',
+    'Dumbbell Curl': 'Kurzhantel-Curls',
+    'Hammer Curl': 'Hammer-Curls',
+    'Cable Curl': 'Kabelzug-Curls',
+    'Tricep Pushdown': 'Trizepsdrücken am Kabel',
+    'Overhead Tricep Extension': 'Trizepsdrücken über Kopf',
+    'Skull Crusher': 'Skull Crusher',
+    'Dips': 'Dips',
+    'Barbell Squat': 'Kniebeuge',
+    'Leg Press': 'Beinpresse',
+    'Leg Extension': 'Beinstrecken',
+    'Lunges': 'Ausfallschritte',
+    'Front Squat': 'Frontkniebeuge',
+    'Romanian Deadlift': 'Rumänisches Kreuzheben',
+    'Leg Curl': 'Beinbeuger',
+    'Good Morning': 'Good Morning',
+    'Nordic Curl': 'Nordic Curl',
+    'Hip Thrust': 'Hip Thrust',
+    'Cable Kickback': 'Kabelzug-Kickback',
+    'Glute Bridge': 'Glute Bridge',
+    'Standing Calf Raise': 'Wadenheben stehend',
+    'Seated Calf Raise': 'Wadenheben sitzend',
+    'Plank': 'Plank',
+    'Cable Crunch': 'Kabelzug-Crunch',
+    'Hanging Leg Raise': 'Beinheben hängend',
+    'Ab Rollout': 'Ab Rollout',
+    'Deadlift': 'Kreuzheben',
+    'Clean & Press': 'Umsetzen & Drücken',
+    "Farmer's Walk": 'Farmers Walk',
+    'Treadmill Run': 'Laufband',
+    'Rowing Machine': 'Rudergerät',
+    'Stationary Bike': 'Ergometer',
+    'Elliptical': 'Crosstrainer',
+  };
 }
 
 enum _Eq {
@@ -52,6 +130,7 @@ class _ExDef {
   final String muscleGroup;
   final String category;
   final List<_Eq> equipment;
+  final bool trackWeight;
 
   const _ExDef({
     required this.name,
@@ -60,131 +139,134 @@ class _ExDef {
     required this.muscleGroup,
     required this.category,
     required this.equipment,
+    this.trackWeight = true,
   });
 }
 
 const _exercises = [
-  // Chest (6)
+  // Brust (6)
   _ExDef(
-    name: 'Bench Press',
+    name: 'Bankdrücken',
     nameKey: 'bench_press',
-    instructions: 'Lie flat on bench, grip bar slightly wider than shoulders, lower to chest and press up.',
+    instructions: 'Flach auf Bank liegen, Stange etwas weiter als schulterbreit greifen, zur Brust senken und hochdrücken.',
     muscleGroup: 'chest',
     category: 'compound',
     equipment: [_Eq.barbell, _Eq.benchPress],
   ),
   _ExDef(
-    name: 'Incline Bench Press',
+    name: 'Schrägbankdrücken',
     nameKey: 'incline_bench_press',
-    instructions: 'Set bench to 30-45 degrees, press bar from upper chest.',
+    instructions: 'Bank auf 30-45 Grad stellen, Stange von der oberen Brust drücken.',
     muscleGroup: 'chest',
     category: 'compound',
     equipment: [_Eq.barbell, _Eq.benchPress],
   ),
   _ExDef(
-    name: 'Dumbbell Chest Press',
+    name: 'Kurzhantel-Brustdrücken',
     nameKey: 'dumbbell_chest_press',
-    instructions: 'Lie flat, press dumbbells up from chest level with neutral grip.',
+    instructions: 'Flach liegen, Kurzhanteln von Brusthöhe mit neutralem Griff hochdrücken.',
     muscleGroup: 'chest',
     category: 'compound',
     equipment: [_Eq.dumbbell, _Eq.benchPress],
   ),
   _ExDef(
-    name: 'Cable Fly',
+    name: 'Kabelzug-Flys',
     nameKey: 'cable_fly',
-    instructions: 'Stand between cable pulleys, bring handles together in hugging motion.',
+    instructions: 'Zwischen Kabelzügen stehen, Griffe in umarmender Bewegung zusammenführen.',
     muscleGroup: 'chest',
     category: 'isolation',
     equipment: [_Eq.cable, _Eq.chestFly],
   ),
   _ExDef(
-    name: 'Machine Chest Press',
+    name: 'Maschinen-Brustpresse',
     nameKey: 'machine_chest_press',
-    instructions: 'Sit upright, press handles forward until arms are extended.',
+    instructions: 'Aufrecht sitzen, Griffe nach vorn drücken bis Arme gestreckt sind.',
     muscleGroup: 'chest',
     category: 'compound',
     equipment: [_Eq.machine],
   ),
   _ExDef(
-    name: 'Push-ups',
+    name: 'Liegestütze',
     nameKey: 'push_ups',
-    instructions: 'Hands shoulder-width apart, lower chest to floor and push back up.',
+    instructions: 'Hände schulterbreit aufsetzen, Brust zum Boden senken und hochdrücken.',
     muscleGroup: 'chest',
     category: 'compound',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
 
-  // Back (6)
+  // Rücken (6)
   _ExDef(
-    name: 'Barbell Row',
+    name: 'Langhantel-Rudern',
     nameKey: 'barbell_row',
-    instructions: 'Hinge at hips, pull barbell to lower chest, squeeze shoulder blades.',
+    instructions: 'An der Hüfte beugen, Langhantel zur unteren Brust ziehen, Schulterblätter zusammendrücken.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Lat Pulldown',
+    name: 'Latzug',
     nameKey: 'lat_pulldown',
-    instructions: 'Grip bar wide, pull down to upper chest while leaning slightly back.',
+    instructions: 'Stange breit greifen, zur oberen Brust herunterziehen, leicht zurücklehnen.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.cable, _Eq.latPulldown],
   ),
   _ExDef(
-    name: 'Seated Cable Row',
+    name: 'Kabelrudern sitzend',
     nameKey: 'seated_cable_row',
-    instructions: 'Sit upright, pull handle to lower chest, squeeze shoulder blades together.',
+    instructions: 'Aufrecht sitzen, Griff zur unteren Brust ziehen, Schulterblätter zusammenpressen.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.cable, _Eq.seatedRow],
   ),
   _ExDef(
-    name: 'Dumbbell Row',
+    name: 'Kurzhantel-Rudern',
     nameKey: 'dumbbell_row',
-    instructions: 'One hand on bench, pull dumbbell to hip with other arm.',
+    instructions: 'Eine Hand auf Bank stützen, Kurzhantel mit der anderen Hand zur Hüfte ziehen.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.dumbbell],
   ),
   _ExDef(
-    name: 'Pull-ups',
+    name: 'Klimmzüge',
     nameKey: 'pull_ups',
-    instructions: 'Hang from bar with overhand grip, pull chin above bar.',
+    instructions: 'An Stange hängen im Obergriff, Kinn über die Stange ziehen.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'T-Bar Row',
+    name: 'T-Bar-Rudern',
     nameKey: 't_bar_row',
-    instructions: 'Straddle bar, pull handle to chest keeping back straight.',
+    instructions: 'Über der Stange stehen, Griff zur Brust ziehen, Rücken gerade halten.',
     muscleGroup: 'back',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
 
-  // Shoulders (5)
+  // Schultern (5)
   _ExDef(
-    name: 'Overhead Press',
+    name: 'Schulterdrücken',
     nameKey: 'overhead_press',
-    instructions: 'Stand with bar at shoulders, press overhead to lockout.',
+    instructions: 'Stange auf Schulterhöhe, über Kopf drücken bis zur Streckung.',
     muscleGroup: 'shoulders',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Lateral Raise',
+    name: 'Seitheben',
     nameKey: 'lateral_raise',
-    instructions: 'Raise dumbbells to sides until arms are parallel to floor.',
+    instructions: 'Kurzhanteln seitlich heben bis Arme parallel zum Boden.',
     muscleGroup: 'shoulders',
     category: 'isolation',
     equipment: [_Eq.dumbbell],
   ),
   _ExDef(
-    name: 'Front Raise',
+    name: 'Frontheben',
     nameKey: 'front_raise',
-    instructions: 'Raise dumbbells in front to shoulder height, lower slowly.',
+    instructions: 'Kurzhanteln vor dem Körper bis Schulterhöhe heben, langsam senken.',
     muscleGroup: 'shoulders',
     category: 'isolation',
     equipment: [_Eq.dumbbell],
@@ -192,67 +274,67 @@ const _exercises = [
   _ExDef(
     name: 'Face Pull',
     nameKey: 'face_pull',
-    instructions: 'Pull rope attachment to face level, spreading hands apart.',
+    instructions: 'Seilgriff auf Gesichtshöhe ziehen, Hände auseinanderführen.',
     muscleGroup: 'shoulders',
     category: 'isolation',
     equipment: [_Eq.cable],
   ),
   _ExDef(
-    name: 'Machine Shoulder Press',
+    name: 'Maschinen-Schulterdrücken',
     nameKey: 'machine_shoulder_press',
-    instructions: 'Sit upright, press handles overhead to full extension.',
+    instructions: 'Aufrecht sitzen, Griffe über Kopf drücken bis zur vollen Streckung.',
     muscleGroup: 'shoulders',
     category: 'compound',
     equipment: [_Eq.machine, _Eq.shoulderPress],
   ),
 
-  // Biceps (4)
+  // Bizeps (4)
   _ExDef(
-    name: 'Barbell Curl',
+    name: 'Langhantel-Curls',
     nameKey: 'barbell_curl',
-    instructions: 'Stand with bar at thighs, curl up keeping elbows stationary.',
+    instructions: 'Stange auf Oberschenkelhöhe, hochcurlen, Ellbogen fixiert halten.',
     muscleGroup: 'biceps',
     category: 'isolation',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Dumbbell Curl',
+    name: 'Kurzhantel-Curls',
     nameKey: 'dumbbell_curl',
-    instructions: 'Alternate curling dumbbells with supinated grip.',
+    instructions: 'Abwechselnd Kurzhanteln mit Untergriff curlen.',
     muscleGroup: 'biceps',
     category: 'isolation',
     equipment: [_Eq.dumbbell],
   ),
   _ExDef(
-    name: 'Hammer Curl',
+    name: 'Hammer-Curls',
     nameKey: 'hammer_curl',
-    instructions: 'Curl dumbbells with neutral (hammer) grip targeting brachialis.',
+    instructions: 'Kurzhanteln mit neutralem Griff curlen, trainiert den Brachialis.',
     muscleGroup: 'biceps',
     category: 'isolation',
     equipment: [_Eq.dumbbell],
   ),
   _ExDef(
-    name: 'Cable Curl',
+    name: 'Kabelzug-Curls',
     nameKey: 'cable_curl',
-    instructions: 'Curl cable attachment from low position, keep elbows pinned.',
+    instructions: 'Kabelaufsatz von unten curlen, Ellbogen fixiert halten.',
     muscleGroup: 'biceps',
     category: 'isolation',
     equipment: [_Eq.cable],
   ),
 
-  // Triceps (4)
+  // Trizeps (4)
   _ExDef(
-    name: 'Tricep Pushdown',
+    name: 'Trizepsdrücken am Kabel',
     nameKey: 'tricep_pushdown',
-    instructions: 'Push cable bar down until arms are fully extended.',
+    instructions: 'Kabelstange nach unten drücken bis Arme voll gestreckt.',
     muscleGroup: 'triceps',
     category: 'isolation',
     equipment: [_Eq.cable],
   ),
   _ExDef(
-    name: 'Overhead Tricep Extension',
+    name: 'Trizepsdrücken über Kopf',
     nameKey: 'overhead_tricep_extension',
-    instructions: 'Hold dumbbell overhead, lower behind head and extend back up.',
+    instructions: 'Kurzhantel über Kopf halten, hinter dem Kopf senken und wieder strecken.',
     muscleGroup: 'triceps',
     category: 'isolation',
     equipment: [_Eq.dumbbell],
@@ -260,7 +342,7 @@ const _exercises = [
   _ExDef(
     name: 'Skull Crusher',
     nameKey: 'skull_crusher',
-    instructions: 'Lie on bench, lower bar to forehead and extend arms.',
+    instructions: 'Auf Bank liegen, Stange zur Stirn senken und Arme strecken.',
     muscleGroup: 'triceps',
     category: 'isolation',
     equipment: [_Eq.barbell, _Eq.benchPress],
@@ -268,67 +350,67 @@ const _exercises = [
   _ExDef(
     name: 'Dips',
     nameKey: 'dips',
-    instructions: 'Lower body between parallel bars, press back up to lockout.',
+    instructions: 'Körper zwischen Parallelbarren senken, wieder hochdrücken bis zur Streckung.',
     muscleGroup: 'triceps',
     category: 'compound',
     equipment: [_Eq.bodyweight],
   ),
 
-  // Quadriceps (5)
+  // Oberschenkel vorn (5)
   _ExDef(
-    name: 'Barbell Squat',
+    name: 'Kniebeuge',
     nameKey: 'barbell_squat',
-    instructions: 'Bar on upper back, squat to parallel or below, drive up through heels.',
+    instructions: 'Stange auf oberem Rücken, in die Hocke gehen, durch die Fersen hochdrücken.',
     muscleGroup: 'quadriceps',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Leg Press',
+    name: 'Beinpresse',
     nameKey: 'leg_press',
-    instructions: 'Feet shoulder-width on platform, lower sled to 90 degrees and press up.',
+    instructions: 'Füße schulterbreit auf Plattform, Schlitten auf 90 Grad senken und hochdrücken.',
     muscleGroup: 'quadriceps',
     category: 'compound',
     equipment: [_Eq.machine],
   ),
   _ExDef(
-    name: 'Leg Extension',
+    name: 'Beinstrecken',
     nameKey: 'leg_extension',
-    instructions: 'Extend legs against pad until straight, lower slowly.',
+    instructions: 'Beine gegen das Polster strecken bis gerade, langsam senken.',
     muscleGroup: 'quadriceps',
     category: 'isolation',
     equipment: [_Eq.machine, _Eq.legExtension],
   ),
   _ExDef(
-    name: 'Lunges',
+    name: 'Ausfallschritte',
     nameKey: 'lunges',
-    instructions: 'Step forward, lower back knee toward floor, push back to start.',
+    instructions: 'Schritt nach vorn, hinteres Knie Richtung Boden senken, zurückdrücken.',
     muscleGroup: 'quadriceps',
     category: 'compound',
     equipment: [_Eq.dumbbell, _Eq.bodyweight],
   ),
   _ExDef(
-    name: 'Front Squat',
+    name: 'Frontkniebeuge',
     nameKey: 'front_squat',
-    instructions: 'Bar on front deltoids, squat keeping torso upright.',
+    instructions: 'Stange auf vorderer Schulter, Kniebeuge mit aufrechtem Oberkörper.',
     muscleGroup: 'quadriceps',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
 
-  // Hamstrings (4)
+  // Oberschenkel hinten (4)
   _ExDef(
-    name: 'Romanian Deadlift',
+    name: 'Rumänisches Kreuzheben',
     nameKey: 'romanian_deadlift',
-    instructions: 'Hinge at hips with slight knee bend, lower bar along legs.',
+    instructions: 'An der Hüfte beugen mit leicht gebeugten Knien, Stange entlang der Beine senken.',
     muscleGroup: 'hamstrings',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Leg Curl',
+    name: 'Beinbeuger',
     nameKey: 'leg_curl',
-    instructions: 'Lie face down, curl pad toward glutes and lower slowly.',
+    instructions: 'Bäuchlings liegen, Polster Richtung Gesäß curlen und langsam senken.',
     muscleGroup: 'hamstrings',
     category: 'isolation',
     equipment: [_Eq.machine, _Eq.legCurl],
@@ -336,7 +418,7 @@ const _exercises = [
   _ExDef(
     name: 'Good Morning',
     nameKey: 'good_morning',
-    instructions: 'Bar on back, hinge forward at hips keeping back straight.',
+    instructions: 'Stange auf Rücken, an der Hüfte nach vorn beugen, Rücken gerade halten.',
     muscleGroup: 'hamstrings',
     category: 'compound',
     equipment: [_Eq.barbell],
@@ -344,25 +426,26 @@ const _exercises = [
   _ExDef(
     name: 'Nordic Curl',
     nameKey: 'nordic_curl',
-    instructions: 'Kneel with feet anchored, lower body forward under control.',
+    instructions: 'Knien mit fixierten Füßen, Körper kontrolliert nach vorn senken.',
     muscleGroup: 'hamstrings',
     category: 'isolation',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
 
-  // Glutes (3)
+  // Gesäß (3)
   _ExDef(
     name: 'Hip Thrust',
     nameKey: 'hip_thrust',
-    instructions: 'Back on bench, drive hips up with bar across lap.',
+    instructions: 'Rücken an Bank, Hüfte mit Stange auf dem Schoß nach oben drücken.',
     muscleGroup: 'glutes',
     category: 'compound',
     equipment: [_Eq.barbell, _Eq.benchPress],
   ),
   _ExDef(
-    name: 'Cable Kickback',
+    name: 'Kabelzug-Kickback',
     nameKey: 'cable_kickback',
-    instructions: 'Attach ankle cuff, kick leg back against cable resistance.',
+    instructions: 'Fußmanschette anlegen, Bein gegen Kabelwiderstand nach hinten strecken.',
     muscleGroup: 'glutes',
     category: 'isolation',
     equipment: [_Eq.cable],
@@ -370,121 +453,198 @@ const _exercises = [
   _ExDef(
     name: 'Glute Bridge',
     nameKey: 'glute_bridge',
-    instructions: 'Lie flat, drive hips up squeezing glutes at top.',
+    instructions: 'Flach liegen, Hüfte nach oben drücken, Gesäß oben anspannen.',
     muscleGroup: 'glutes',
     category: 'isolation',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
 
-  // Calves (2)
+  // Waden (2)
   _ExDef(
-    name: 'Standing Calf Raise',
+    name: 'Wadenheben stehend',
     nameKey: 'standing_calf_raise',
-    instructions: 'Rise onto toes under load, lower slowly for full stretch.',
+    instructions: 'Unter Last auf die Zehenspitzen steigen, langsam senken für volle Dehnung.',
     muscleGroup: 'calves',
     category: 'isolation',
     equipment: [_Eq.machine, _Eq.smithMachine],
   ),
   _ExDef(
-    name: 'Seated Calf Raise',
+    name: 'Wadenheben sitzend',
     nameKey: 'seated_calf_raise',
-    instructions: 'Sit with pad on knees, raise heels as high as possible.',
+    instructions: 'Sitzen mit Polster auf den Knien, Fersen so hoch wie möglich heben.',
     muscleGroup: 'calves',
     category: 'isolation',
     equipment: [_Eq.machine],
   ),
 
-  // Core (4)
+  // Rumpf (4)
   _ExDef(
     name: 'Plank',
     nameKey: 'plank',
-    instructions: 'Hold push-up position on forearms, keep body straight.',
+    instructions: 'Liegestützposition auf Unterarmen halten, Körper gerade halten.',
     muscleGroup: 'core',
     category: 'isolation',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'Cable Crunch',
-    nameKey: 'cable_crunch',
-    instructions: 'Kneel at cable, crunch down bringing elbows to knees.',
+    name: 'Crunches am Halbball',
+    nameKey: 'bosu_crunch',
+    instructions: 'Rücken auf dem Halbball (Bosu Ball), Bauchmuskeln anspannen und Oberkörper aufrollen.',
     muscleGroup: 'core',
     category: 'isolation',
-    equipment: [_Eq.cable],
+    equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'Hanging Leg Raise',
+    name: 'Beinheben hängend',
     nameKey: 'hanging_leg_raise',
-    instructions: 'Hang from bar, raise legs to horizontal or above.',
+    instructions: 'An Stange hängen, Beine bis zur Horizontalen oder höher heben.',
     muscleGroup: 'core',
     category: 'isolation',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
   _ExDef(
     name: 'Ab Rollout',
     nameKey: 'ab_rollout',
-    instructions: 'Kneel with ab wheel, roll forward and pull back using core.',
+    instructions: 'Knien mit Ab-Wheel, nach vorn rollen und mit der Rumpfmuskulatur zurückziehen.',
     muscleGroup: 'core',
     category: 'isolation',
     equipment: [_Eq.bodyweight],
+    trackWeight: false,
   ),
 
-  // Full Body (3)
+  // Ganzkörper (3)
   _ExDef(
-    name: 'Deadlift',
+    name: 'Kreuzheben',
     nameKey: 'deadlift',
-    instructions: 'Stand with bar over mid-foot, hinge and grip, drive up to lockout.',
+    instructions: 'Stange über Fußmitte, beugen und greifen, bis zur Streckung hochziehen.',
     muscleGroup: 'fullBody',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: 'Clean & Press',
+    name: 'Umsetzen & Drücken',
     nameKey: 'clean_and_press',
-    instructions: 'Clean bar to shoulders explosively, then press overhead.',
+    instructions: 'Stange explosiv zu den Schultern umsetzen, dann über Kopf drücken.',
     muscleGroup: 'fullBody',
     category: 'compound',
     equipment: [_Eq.barbell],
   ),
   _ExDef(
-    name: "Farmer's Walk",
+    name: 'Farmers Walk',
     nameKey: 'farmers_walk',
-    instructions: 'Hold heavy dumbbells at sides, walk with upright posture.',
+    instructions: 'Schwere Kurzhanteln seitlich halten, mit aufrechter Haltung gehen.',
     muscleGroup: 'fullBody',
     category: 'compound',
     equipment: [_Eq.dumbbell],
   ),
 
-  // Cardio (4)
+  // Unterarme (2)
   _ExDef(
-    name: 'Treadmill Run',
+    name: 'Handgelenkscurls',
+    nameKey: 'wrist_curl',
+    instructions: 'Unterarme auf Bank ablegen, Handgelenke mit der Stange nach oben curlen.',
+    muscleGroup: 'forearms',
+    category: 'isolation',
+    equipment: [_Eq.barbell],
+  ),
+  _ExDef(
+    name: 'Reverse Curls',
+    nameKey: 'reverse_curl',
+    instructions: 'Stange im Obergriff greifen und mit fixierten Ellbogen curlen.',
+    muscleGroup: 'forearms',
+    category: 'isolation',
+    equipment: [_Eq.barbell],
+  ),
+
+  // Zusätzliche Übungen
+  _ExDef(
+    name: 'Bulgarische Kniebeuge',
+    nameKey: 'bulgarian_split_squat',
+    instructions: 'Hinterer Fuß auf Bank ablegen, vorderes Bein in die Hocke gehen.',
+    muscleGroup: 'quadriceps',
+    category: 'compound',
+    equipment: [_Eq.dumbbell, _Eq.bodyweight],
+  ),
+  _ExDef(
+    name: 'Latzug eng',
+    nameKey: 'close_grip_lat_pulldown',
+    instructions: 'Enge Griffstange am Latzug zur oberen Brust herunterziehen.',
+    muscleGroup: 'back',
+    category: 'compound',
+    equipment: [_Eq.cable, _Eq.latPulldown],
+  ),
+  _ExDef(
+    name: 'Reverse Fly',
+    nameKey: 'reverse_fly',
+    instructions: 'Vorgebeugt stehend, Kurzhanteln seitlich nach oben heben.',
+    muscleGroup: 'shoulders',
+    category: 'isolation',
+    equipment: [_Eq.dumbbell],
+  ),
+  _ExDef(
+    name: 'Kabel-Seitheben',
+    nameKey: 'cable_lateral_raise',
+    instructions: 'Am Kabelzug seitlich stehend, Arm seitlich bis Schulterhöhe heben.',
+    muscleGroup: 'shoulders',
+    category: 'isolation',
+    equipment: [_Eq.cable],
+  ),
+  _ExDef(
+    name: 'Brustdips',
+    nameKey: 'chest_dips',
+    instructions: 'Körper am Barren nach vorn neigen, tief senken und hochdrücken.',
+    muscleGroup: 'chest',
+    category: 'compound',
+    equipment: [_Eq.bodyweight],
+  ),
+  _ExDef(
+    name: 'Hackenschmidt-Kniebeuge',
+    nameKey: 'hack_squat',
+    instructions: 'An der Hackenschmidt-Maschine Schlitten nach oben drücken.',
+    muscleGroup: 'quadriceps',
+    category: 'compound',
+    equipment: [_Eq.machine],
+  ),
+
+  // Ausdauer (4)
+  _ExDef(
+    name: 'Laufband',
     nameKey: 'treadmill_run',
-    instructions: 'Run at steady pace on treadmill for desired duration.',
+    instructions: 'In gleichmäßigem Tempo auf dem Laufband laufen.',
     muscleGroup: 'cardio',
     category: 'cardio',
     equipment: [_Eq.treadmill],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'Rowing Machine',
+    name: 'Rudergerät',
     nameKey: 'rowing_machine',
-    instructions: 'Drive with legs first, then pull handle to lower chest.',
+    instructions: 'Zuerst mit den Beinen drücken, dann Griff zur unteren Brust ziehen.',
     muscleGroup: 'cardio',
     category: 'cardio',
     equipment: [_Eq.rowingMachine],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'Stationary Bike',
+    name: 'Ergometer',
     nameKey: 'stationary_bike',
-    instructions: 'Pedal at steady cadence with appropriate resistance.',
+    instructions: 'Mit gleichmäßiger Trittfrequenz und angemessenem Widerstand treten.',
     muscleGroup: 'cardio',
     category: 'cardio',
     equipment: [_Eq.stationaryBike],
+    trackWeight: false,
   ),
   _ExDef(
-    name: 'Elliptical',
+    name: 'Crosstrainer',
     nameKey: 'elliptical',
-    instructions: 'Stride smoothly on elliptical machine at moderate intensity.',
+    instructions: 'Gleichmäßig auf dem Crosstrainer bei moderater Intensität trainieren.',
     muscleGroup: 'cardio',
     category: 'cardio',
     equipment: [_Eq.elliptical],
+    trackWeight: false,
   ),
 ];

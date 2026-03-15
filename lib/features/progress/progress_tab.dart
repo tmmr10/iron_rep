@@ -1,111 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../providers/stats_providers.dart';
+import '../../models/enums.dart';
+import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
-import '../../shared/widgets/ad_banner.dart';
 import '../../shared/widgets/iron_card.dart';
-import 'widgets/volume_chart.dart';
-import 'widgets/frequency_heatmap.dart';
-import 'widgets/pr_list.dart';
+import '../../shared/widgets/section_header.dart';
+import 'widgets/muscle_distribution.dart';
+import 'widgets/overall_progress_card.dart';
+import 'widgets/strength_preview.dart';
+
+// Provider for exercises the user has actually trained
+final trainedExercisesProvider = FutureProvider<
+    List<({int id, String name, String muscleGroup, double lastWeight})>>(
+    (ref) async {
+  final db = ref.watch(databaseProvider);
+  final results = await db.customSelect(
+    '''
+    SELECT e.id, e.name, e.primary_muscle_group,
+           (SELECT s.weight FROM workout_sets s
+            JOIN workout_exercises we2 ON s.workout_exercise_id = we2.id
+            WHERE we2.exercise_id = e.id AND s.weight IS NOT NULL AND s.is_completed = 1
+            ORDER BY s.completed_at DESC LIMIT 1) AS last_weight
+    FROM exercises e
+    WHERE e.id IN (
+      SELECT DISTINCT we.exercise_id FROM workout_exercises we
+      JOIN workouts w ON we.workout_id = w.id
+      WHERE w.completed_at IS NOT NULL
+    )
+    ORDER BY e.name
+    ''',
+  ).get();
+
+  return results
+      .map((row) => (
+            id: row.read<int>('id'),
+            name: row.read<String>('name'),
+            muscleGroup: row.read<String>('primary_muscle_group'),
+            lastWeight: row.readNullable<double>('last_weight') ?? 0.0,
+          ))
+      .toList();
+});
 
 class ProgressTab extends ConsumerWidget {
   const ProgressTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final totalWorkouts = ref.watch(totalWorkoutsProvider);
-    final totalSets = ref.watch(totalSetsProvider);
-    final totalVolume = ref.watch(totalVolumeProvider);
+    final c = AppColors.of(context);
+    final trainedExercises = ref.watch(trainedExercisesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Progress')),
+      appBar: AppBar(title: const Text('Fortschritt')),
       body: ListView(
-        padding: IronRepSpacing.screenPadding,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
-          // Summary stats
-          Row(
-            children: [
-              _StatCard(
-                label: 'Workouts',
-                value: totalWorkouts.valueOrNull?.toString() ?? '0',
-              ),
-              const SizedBox(width: IronRepSpacing.sm),
-              _StatCard(
-                label: 'Sets',
-                value: totalSets.valueOrNull?.toString() ?? '0',
-              ),
-              const SizedBox(width: IronRepSpacing.sm),
-              _StatCard(
-                label: 'Volume',
-                value: _formatVolume(totalVolume.valueOrNull ?? 0),
-              ),
-            ],
+          const SectionHeader(title: 'Deine Steigerung'),
+          const OverallProgressCard(),
+
+          const SizedBox(height: IronRepSpacing.xl),
+          const SectionHeader(title: 'Muskelverteilung'),
+          const MuscleDistribution(),
+
+          const SizedBox(height: IronRepSpacing.xl),
+          const SectionHeader(title: 'Kraftentwicklung'),
+          const StrengthPreview(),
+
+          const SizedBox(height: IronRepSpacing.xl),
+          const SectionHeader(title: 'Deine Übungen'),
+          trainedExercises.when(
+            data: (exercises) {
+              if (exercises.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Schließe ein Workout ab, um deine Übungen hier zu sehen',
+                    style: TextStyle(color: c.textMuted),
+                  ),
+                );
+              }
+              return Column(
+                children: exercises.map((ex) {
+                  final muscle = MuscleGroup.values.firstWhere(
+                    (m) => m.name == ex.muscleGroup,
+                    orElse: () => MuscleGroup.chest,
+                  );
+                  return Padding(
+                    padding:
+                        const EdgeInsets.only(bottom: IronRepSpacing.sm),
+                    child: IronCard(
+                      onTap: () =>
+                          context.push('/exercise-progress/${ex.id}'),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: muscle.color,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: IronRepSpacing.md),
+                          Expanded(
+                            child: Text(
+                              ex.name,
+                              style: TextStyle(
+                                color: c.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (ex.lastWeight > 0)
+                            Text(
+                              '${ex.lastWeight.toStringAsFixed(1)} kg',
+                              style: TextStyle(
+                                color: c.accent,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.chevron_right,
+                              color: c.textMuted, size: 20),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const SizedBox(height: 60),
+            error: (e, _) => Text('Error: $e'),
           ),
-          const SizedBox(height: IronRepSpacing.xl),
-
-          Text('Weekly Volume',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: IronRepSpacing.md),
-          const SizedBox(height: 200, child: VolumeChart()),
-
-          const SizedBox(height: IronRepSpacing.xl),
-          Text('Activity',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: IronRepSpacing.md),
-          const FrequencyHeatmap(),
-
-          const SizedBox(height: IronRepSpacing.xl),
-          Text('Personal Records',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: IronRepSpacing.md),
-          const PrList(),
 
           const SizedBox(height: IronRepSpacing.lg),
-          const AdBannerWidget(),
         ],
       ),
     );
   }
-
-  String _formatVolume(double vol) {
-    if (vol >= 1000000) return '${(vol / 1000000).toStringAsFixed(1)}M';
-    if (vol >= 1000) return '${(vol / 1000).toStringAsFixed(1)}k';
-    return vol.toStringAsFixed(0);
-  }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _StatCard({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: IronCard(
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: IronRepColors.accent,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: IronRepColors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

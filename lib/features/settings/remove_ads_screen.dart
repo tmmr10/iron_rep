@@ -11,6 +11,7 @@ class RemoveAdsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final purchaseService = ref.watch(purchaseServiceProvider);
 
     return Scaffold(
@@ -22,16 +23,15 @@ class RemoveAdsScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              const Icon(Icons.block,
-                  size: 80, color: IronRepColors.accent),
+              Icon(Icons.block, size: 80, color: c.accent),
               const SizedBox(height: IronRepSpacing.xl),
               Text('Remove Ads',
                   style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: IronRepSpacing.md),
-              const Text(
+              Text(
                 'Enjoy an ad-free experience with a one-time purchase.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: IronRepColors.textSecondary),
+                style: TextStyle(color: c.textSecondary),
               ),
               const SizedBox(height: IronRepSpacing.xxl),
               _FeatureRow(icon: Icons.block, text: 'No banner ads anywhere'),
@@ -70,8 +70,8 @@ class RemoveAdsScreen extends ConsumerWidget {
                   };
                   await purchaseService.restorePurchases();
                 },
-                child: const Text('Restore Purchase',
-                    style: TextStyle(color: IronRepColors.textSecondary)),
+                child: Text('Restore Purchase',
+                    style: TextStyle(color: c.textSecondary)),
               ),
               const SizedBox(height: IronRepSpacing.lg),
             ],
@@ -89,13 +89,13 @@ class _FeatureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Row(
       children: [
-        Icon(icon, color: IronRepColors.accent, size: 22),
+        Icon(icon, color: c.accent, size: 22),
         const SizedBox(width: 12),
         Text(text,
-            style: const TextStyle(
-                color: IronRepColors.textPrimary, fontSize: 16)),
+            style: TextStyle(color: c.textPrimary, fontSize: 16)),
       ],
     );
   }

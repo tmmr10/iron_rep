@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
+import '../../models/workout_history_item.dart';
 import '../app_database.dart';
+import '../tables/exercises_table.dart';
 import '../tables/workouts_table.dart';
 import '../tables/workout_exercises_table.dart';
 import '../tables/sets_table.dart';
@@ -8,7 +10,7 @@ import '../tables/personal_records_table.dart';
 
 part 'stats_dao.g.dart';
 
-@DriftAccessor(tables: [Workouts, WorkoutExercises, WorkoutSets, PersonalRecords])
+@DriftAccessor(tables: [Workouts, WorkoutExercises, Exercises, WorkoutSets, PersonalRecords])
 class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
   StatsDao(super.db);
 
@@ -119,5 +121,56 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
       'SELECT COALESCE(SUM(weight * reps), 0) AS vol FROM workout_sets WHERE is_completed = 1',
     ).getSingle();
     return result.read<double>('vol');
+  }
+
+  /// Enriched history: workout + muscle groups, set count, total volume
+  Stream<List<WorkoutHistoryItem>> watchEnrichedHistory() {
+    return customSelect(
+      '''
+      SELECT w.id, w.name, w.started_at, w.completed_at, w.duration_seconds,
+             GROUP_CONCAT(DISTINCT e.primary_muscle_group) AS muscle_groups,
+             COUNT(DISTINCT CASE WHEN s.is_completed = 1 THEN s.id END) AS set_count,
+             COALESCE(SUM(CASE WHEN s.is_completed = 1 THEN s.weight * s.reps ELSE 0 END), 0) AS total_volume
+      FROM workouts w
+      LEFT JOIN workout_exercises we ON we.workout_id = w.id
+      LEFT JOIN exercises e ON we.exercise_id = e.id
+      LEFT JOIN workout_sets s ON s.workout_exercise_id = we.id
+      WHERE w.completed_at IS NOT NULL
+      GROUP BY w.id
+      ORDER BY w.completed_at DESC
+      ''',
+      readsFrom: {workouts, workoutExercises, exercises, workoutSets},
+    ).watch().map((rows) => rows.map((row) {
+          final muscleStr = row.readNullable<String>('muscle_groups');
+          return WorkoutHistoryItem(
+            id: row.read<int>('id'),
+            name: row.readNullable<String>('name'),
+            startedAt: DateTime.fromMillisecondsSinceEpoch(
+                row.read<int>('started_at') * 1000),
+            completedAt: row.readNullable<int>('completed_at') != null
+                ? DateTime.fromMillisecondsSinceEpoch(
+                    row.read<int>('completed_at') * 1000)
+                : null,
+            durationSeconds: row.readNullable<int>('duration_seconds'),
+            muscleGroups: muscleStr != null
+                ? muscleStr.split(',').where((s) => s.isNotEmpty).toList()
+                : [],
+            setCount: row.read<int>('set_count'),
+            totalVolume: row.read<double>('total_volume'),
+          );
+        }).toList());
+  }
+
+  /// Count completed workouts this week (since Monday 00:00)
+  Future<int> getWorkoutsThisWeek() async {
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    final sinceEpoch = monday.millisecondsSinceEpoch ~/ 1000;
+    final result = await customSelect(
+      'SELECT COUNT(*) AS cnt FROM workouts WHERE completed_at IS NOT NULL AND started_at >= ?',
+      variables: [Variable.withInt(sinceEpoch)],
+    ).getSingle();
+    return result.read<int>('cnt');
   }
 }

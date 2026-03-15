@@ -30,6 +30,7 @@ class SetInputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final typeLabel = SetType.values
         .firstWhere((t) => t.name == setType, orElse: () => SetType.working)
         .label;
@@ -38,9 +39,7 @@ class SetInputRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: IronRepSpacing.md, vertical: IronRepSpacing.sm),
       decoration: BoxDecoration(
-        color: isCompleted
-            ? IronRepColors.successDim
-            : IronRepColors.elevated,
+        color: isCompleted ? c.successDim : c.elevated,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -50,9 +49,7 @@ class SetInputRow extends StatelessWidget {
             child: Text(
               '$setNumber',
               style: TextStyle(
-                color: isCompleted
-                    ? IronRepColors.success
-                    : IronRepColors.textSecondary,
+                color: isCompleted ? c.success : c.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -61,25 +58,23 @@ class SetInputRow extends StatelessWidget {
             width: 48,
             child: Text(
               typeLabel,
-              style: const TextStyle(
-                color: IronRepColors.textMuted,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: c.textMuted, fontSize: 11),
             ),
           ),
           Expanded(
             child: _buildInput(
+              context: context,
               controller: weightController,
               hint: previousWeight?.toStringAsFixed(1) ?? 'kg',
               enabled: !isCompleted,
             ),
           ),
           const SizedBox(width: 8),
-          const Text('×',
-              style: TextStyle(color: IronRepColors.textMuted)),
+          Text('×', style: TextStyle(color: c.textMuted)),
           const SizedBox(width: 8),
           Expanded(
             child: _buildInput(
+              context: context,
               controller: repsController,
               hint: previousReps?.toString() ?? 'reps',
               enabled: !isCompleted,
@@ -90,9 +85,7 @@ class SetInputRow extends StatelessWidget {
           IconButton(
             icon: Icon(
               isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-              color: isCompleted
-                  ? IronRepColors.success
-                  : IronRepColors.textMuted,
+              color: isCompleted ? c.success : c.textMuted,
             ),
             onPressed: isCompleted ? null : onComplete,
           ),
@@ -102,11 +95,13 @@ class SetInputRow extends StatelessWidget {
   }
 
   Widget _buildInput({
+    required BuildContext context,
     required TextEditingController controller,
     required String hint,
     required bool enabled,
     bool isInt = false,
   }) {
+    final c = AppColors.of(context);
     return TextField(
       controller: controller,
       enabled: enabled,
@@ -115,17 +110,14 @@ class SetInputRow extends StatelessWidget {
           ? [FilteringTextInputFormatter.digitsOnly]
           : [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
       textAlign: TextAlign.center,
-      style: const TextStyle(
-        color: IronRepColors.textPrimary,
+      style: TextStyle(
+        color: c.textPrimary,
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
-          color: IronRepColors.textMuted,
-          fontSize: 14,
-        ),
+        hintStyle: TextStyle(color: c.textMuted, fontSize: 14),
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 8, vertical: 8),

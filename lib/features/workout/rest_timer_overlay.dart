@@ -9,6 +9,7 @@ class RestTimerOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final timer = ref.watch(restTimerProvider);
 
     if (!timer.isRunning) return const SizedBox.shrink();
@@ -17,9 +18,9 @@ class RestTimerOverlay extends ConsumerWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: IronRepColors.card,
+        color: c.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: IronRepColors.accent, width: 1),
+        border: Border.all(color: c.accent, width: 1),
       ),
       child: Row(
         children: [
@@ -29,8 +30,8 @@ class RestTimerOverlay extends ConsumerWidget {
             child: CircularProgressIndicator(
               value: timer.progress,
               strokeWidth: 3,
-              color: IronRepColors.accent,
-              backgroundColor: IronRepColors.elevated,
+              color: c.accent,
+              backgroundColor: c.elevated,
             ),
           ),
           const SizedBox(width: 16),
@@ -39,35 +40,35 @@ class RestTimerOverlay extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Rest Timer',
+                Text('Rest Timer',
                     style: TextStyle(
-                      color: IronRepColors.textSecondary,
+                      color: c.textSecondary,
                       fontSize: 12,
                     )),
                 Text(
                   timer.displayTime,
-                  style: const TextStyle(
-                    color: IronRepColors.textPrimary,
+                  style: TextStyle(
+                    color: c.textPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    fontFeatures: [FontFeature.tabularFigures()],
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.remove, color: IronRepColors.textSecondary),
+            icon: Icon(Icons.remove, color: c.textSecondary),
             onPressed: () =>
                 ref.read(restTimerProvider.notifier).addTime(-15),
           ),
           IconButton(
-            icon: const Icon(Icons.add, color: IronRepColors.textSecondary),
+            icon: Icon(Icons.add, color: c.textSecondary),
             onPressed: () =>
                 ref.read(restTimerProvider.notifier).addTime(15),
           ),
           IconButton(
-            icon: const Icon(Icons.skip_next, color: IronRepColors.accent),
+            icon: Icon(Icons.skip_next, color: c.accent),
             onPressed: () => ref.read(restTimerProvider.notifier).skip(),
           ),
         ],

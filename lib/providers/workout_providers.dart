@@ -3,32 +3,45 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import '../models/workout_history_item.dart';
 import '../models/workout_summary.dart';
 import 'database_provider.dart';
 
 // Active workout state
 class ActiveWorkoutState {
   final int? workoutId;
+  final int? planId;
+  final String? planName;
   final bool isActive;
+  final bool isPaused;
   final Duration elapsed;
   final List<int> workoutExerciseIds;
 
   const ActiveWorkoutState({
     this.workoutId,
+    this.planId,
+    this.planName,
     this.isActive = false,
+    this.isPaused = false,
     this.elapsed = Duration.zero,
     this.workoutExerciseIds = const [],
   });
 
   ActiveWorkoutState copyWith({
     int? workoutId,
+    int? planId,
+    String? planName,
     bool? isActive,
+    bool? isPaused,
     Duration? elapsed,
     List<int>? workoutExerciseIds,
   }) {
     return ActiveWorkoutState(
       workoutId: workoutId ?? this.workoutId,
+      planId: planId ?? this.planId,
+      planName: planName ?? this.planName,
       isActive: isActive ?? this.isActive,
+      isPaused: isPaused ?? this.isPaused,
       elapsed: elapsed ?? this.elapsed,
       workoutExerciseIds: workoutExerciseIds ?? this.workoutExerciseIds,
     );
@@ -47,8 +60,17 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     final active = await _db.workoutDao.getActiveWorkout();
     if (active != null) {
       final elapsed = DateTime.now().difference(active.startedAt);
+      String? planName;
+      if (active.planId != null) {
+        try {
+          final plan = await _db.planDao.getPlan(active.planId!);
+          planName = plan.name;
+        } catch (_) {}
+      }
       state = ActiveWorkoutState(
         workoutId: active.id,
+        planId: active.planId,
+        planName: planName ?? active.name,
         isActive: true,
         elapsed: elapsed,
       );
@@ -59,20 +81,56 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.isActive) {
+      if (state.isActive && !state.isPaused) {
         state = state.copyWith(elapsed: state.elapsed + const Duration(seconds: 1));
       }
     });
   }
 
-  Future<void> startWorkout({String? name}) async {
-    final id = await _db.workoutDao.startWorkout(name: name);
+  void togglePause() {
+    state = state.copyWith(isPaused: !state.isPaused);
+  }
+
+  Future<void> preparePlan(int planId) async {
+    final plan = await _db.planDao.getPlan(planId);
+    state = ActiveWorkoutState(
+      planId: planId,
+      planName: plan.name,
+      isActive: false,
+      isPaused: false,
+      elapsed: Duration.zero,
+    );
+  }
+
+  Future<void> startWorkout({String? name, int? planId}) async {
+    String? planName = name;
+    if (planId != null) {
+      final plan = await _db.planDao.getPlan(planId);
+      planName = plan.name;
+    }
+    final id = await _db.workoutDao.startWorkout(
+        name: planName, planId: planId);
     state = ActiveWorkoutState(
       workoutId: id,
+      planId: planId,
+      planName: planName,
       isActive: true,
       elapsed: Duration.zero,
     );
     _startTimer();
+
+    // If starting from a plan, pre-load exercises with target sets
+    if (planId != null) {
+      final planExercises = await _db.planDao.getPlanExercises(planId);
+      for (final pe in planExercises) {
+        final weId =
+            await _db.workoutDao.addExerciseToWorkout(id, pe.exerciseId);
+        // Pre-create target sets
+        for (var i = 0; i < pe.targetSets; i++) {
+          await _db.workoutDao.addSet(weId);
+        }
+      }
+    }
   }
 
   Future<void> addExercise(int exerciseId) async {
@@ -101,6 +159,10 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     await _db.workoutDao.completeSet(setId);
   }
 
+  Future<void> uncompleteSet(int setId) async {
+    await _db.workoutDao.uncompleteSet(setId);
+  }
+
   Future<void> deleteSet(int setId) async {
     await _db.workoutDao.deleteSet(setId);
   }
@@ -127,6 +189,18 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
           .updatePersonalRecords(we.exerciseId, workoutId, completedSets);
     }
 
+    // Calculate skipped exercises if workout is plan-based
+    int skippedCount = 0;
+    if (state.planId != null) {
+      final planExercises =
+          await _db.planDao.getPlanExercises(state.planId!);
+      final workoutExerciseIds =
+          workoutExercises.map((we) => we.exerciseId).toSet();
+      skippedCount = planExercises
+          .where((pe) => !workoutExerciseIds.contains(pe.exerciseId))
+          .length;
+    }
+
     await _db.workoutDao.finishWorkout(workoutId);
     _timer?.cancel();
 
@@ -144,6 +218,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       totalSets: totalSets,
       totalVolume: totalVolume,
       prCount: prCount,
+      skippedCount: skippedCount,
     );
 
     state = const ActiveWorkoutState();
@@ -170,6 +245,19 @@ final activeWorkoutProvider =
   return ActiveWorkoutNotifier(db);
 });
 
+// Plan exercises with names (for pre-start view)
+final planExerciseNamesProvider =
+    FutureProvider.family<List<({String name, int targetSets})>, int>(
+        (ref, planId) async {
+  final db = ref.watch(databaseProvider);
+  final planExercises = await db.planDao.getPlanExercises(planId);
+  final allExercises = await db.exerciseDao.getAll();
+  return planExercises.map((pe) {
+    final ex = allExercises.firstWhere((e) => e.id == pe.exerciseId);
+    return (name: ex.name, targetSets: pe.targetSets);
+  }).toList();
+});
+
 // Workout exercises stream
 final workoutExercisesProvider =
     StreamProvider.family<List<WorkoutExercise>, int>((ref, workoutId) {
@@ -188,6 +276,13 @@ final setsForWorkoutExerciseProvider =
 final workoutHistoryProvider = StreamProvider<List<Workout>>((ref) {
   final db = ref.watch(databaseProvider);
   return db.workoutDao.watchCompletedWorkouts();
+});
+
+// Enriched workout history with muscle groups, set count, volume
+final enrichedWorkoutHistoryProvider =
+    StreamProvider<List<WorkoutHistoryItem>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.statsDao.watchEnrichedHistory();
 });
 
 // Recent workouts for templates

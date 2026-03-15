@@ -8,6 +8,7 @@ class ExerciseWithEquipment {
   final MuscleGroup muscleGroup;
   final ExerciseCategory category;
   final bool isCustom;
+  final bool trackWeight;
   final List<EquipmentType> equipment;
 
   const ExerciseWithEquipment({
@@ -18,6 +19,7 @@ class ExerciseWithEquipment {
     required this.muscleGroup,
     required this.category,
     required this.isCustom,
+    this.trackWeight = true,
     required this.equipment,
   });
 

@@ -7,6 +7,7 @@ class Exercises extends Table {
   TextColumn get instructions => text().nullable()();
   TextColumn get primaryMuscleGroup => text()();
   TextColumn get category => text()();
+  BoolColumn get trackWeight => boolean().withDefault(const Constant(true))();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt =>

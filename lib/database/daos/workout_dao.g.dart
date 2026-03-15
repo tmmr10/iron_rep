@@ -4,6 +4,7 @@ part of 'workout_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$WorkoutDaoMixin on DatabaseAccessor<AppDatabase> {
+  $TrainingPlansTable get trainingPlans => attachedDatabase.trainingPlans;
   $WorkoutsTable get workouts => attachedDatabase.workouts;
   $ExercisesTable get exercises => attachedDatabase.exercises;
   $WorkoutExercisesTable get workoutExercises =>
@@ -16,6 +17,8 @@ mixin _$WorkoutDaoMixin on DatabaseAccessor<AppDatabase> {
 class WorkoutDaoManager {
   final _$WorkoutDaoMixin _db;
   WorkoutDaoManager(this._db);
+  $$TrainingPlansTableTableManager get trainingPlans =>
+      $$TrainingPlansTableTableManager(_db.attachedDatabase, _db.trainingPlans);
   $$WorkoutsTableTableManager get workouts =>
       $$WorkoutsTableTableManager(_db.attachedDatabase, _db.workouts);
   $$ExercisesTableTableManager get exercises =>

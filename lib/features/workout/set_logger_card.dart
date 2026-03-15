@@ -7,120 +7,224 @@ import '../../models/enums.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../providers/timer_providers.dart';
+import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
-import '../../shared/widgets/iron_card.dart';
+import '../../shared/widgets/tap_scale.dart';
 
-class SetLoggerCard extends ConsumerWidget {
+final previousSetsProvider = FutureProvider.family<
+    List<WorkoutSet>, ({int exerciseId, int workoutId})>((ref, params) {
+  final db = ref.watch(databaseProvider);
+  return db.workoutDao
+      .getPreviousSetsForExercise(params.exerciseId, params.workoutId);
+});
+
+class SetLoggerCard extends ConsumerStatefulWidget {
   final WorkoutExercise workoutExercise;
   final int workoutId;
+  final bool initiallyExpanded;
 
   const SetLoggerCard({
     super.key,
     required this.workoutExercise,
     required this.workoutId,
+    this.initiallyExpanded = false,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final setsAsync =
-        ref.watch(setsForWorkoutExerciseProvider(workoutExercise.id));
-    final allExercises = ref.watch(allExercisesProvider);
-    final exerciseName = allExercises.whenOrNull(
-      data: (list) {
-        final e = list.where((e) => e.id == workoutExercise.exerciseId);
-        return e.isNotEmpty ? e.first.name : 'Exercise';
-      },
-    ) ?? 'Exercise';
+  ConsumerState<SetLoggerCard> createState() => _SetLoggerCardState();
+}
 
-    return IronCard(
-      padding: const EdgeInsets.all(IronRepSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  exerciseName,
-                  style: const TextStyle(
-                    color: IronRepColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
+class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initiallyExpanded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final setsAsync =
+        ref.watch(setsForWorkoutExerciseProvider(widget.workoutExercise.id));
+    final allExercises = ref.watch(allExercisesProvider);
+    final previousSetsAsync = ref.watch(previousSetsProvider((
+      exerciseId: widget.workoutExercise.exerciseId,
+      workoutId: widget.workoutId,
+    )));
+
+    final exerciseData = allExercises.whenOrNull(
+      data: (list) {
+        final e =
+            list.where((e) => e.id == widget.workoutExercise.exerciseId);
+        return e.isNotEmpty ? e.first : null;
+      },
+    );
+    final exerciseName = exerciseData?.name ?? 'Exercise';
+    final muscleGroup = exerciseData != null
+        ? MuscleGroup.values.firstWhere(
+            (m) => m.name == exerciseData.primaryMuscleGroup,
+            orElse: () => MuscleGroup.chest,
+          )
+        : null;
+
+    final previousSets = previousSetsAsync.valueOrNull ?? [];
+
+    return setsAsync.when(
+      data: (sets) {
+        final completedCount = sets.where((s) => s.isCompleted).length;
+        final totalCount = sets.length;
+        final allDone = completedCount == totalCount && totalCount > 0;
+
+        String? lastInfo;
+        if (previousSets.isNotEmpty) {
+          final bestWeight = previousSets
+              .where((s) => s.weight != null)
+              .map((s) => s.weight!)
+              .fold<double>(0, (a, b) => a > b ? a : b);
+          if (bestWeight > 0) {
+            lastInfo = '${bestWeight.toStringAsFixed(0)} kg';
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TapScale(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    if (muscleGroup != null) ...[
+                      Container(
+                        width: 3,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: allDone ? c.success : muscleGroup.color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        exerciseName,
+                        style: TextStyle(
+                          color: allDone ? c.success : c.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    if (!_isExpanded) ...[
+                      if (completedCount > 0)
+                        Text(
+                          '$completedCount/$totalCount',
+                          style: TextStyle(
+                            color: allDone ? c.success : c.textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        )
+                      else if (lastInfo != null)
+                        Text(
+                          lastInfo,
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      const SizedBox(width: 4),
+                    ],
+                    Icon(
+                      _isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: c.textMuted,
+                      size: 20,
+                    ),
+                  ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline,
-                    color: IronRepColors.error, size: 20),
-                onPressed: () => ref
+            ),
+            if (_isExpanded) ...[
+              const SizedBox(height: 4),
+              ...sets.asMap().entries.map((entry) {
+                final index = entry.key;
+                final s = entry.value;
+                final prevSet =
+                    index < previousSets.length ? previousSets[index] : null;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Dismissible(
+                    key: ValueKey('set_${s.id}'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: c.error.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child:
+                          Icon(Icons.delete_outline, color: c.error, size: 20),
+                    ),
+                    onDismissed: (_) => ref
+                        .read(activeWorkoutProvider.notifier)
+                        .deleteSet(s.id),
+                    child: _SetRow(
+                      set_: s,
+                      previousSet: prevSet,
+                      workoutExerciseId: widget.workoutExercise.id,
+                      exerciseId: widget.workoutExercise.exerciseId,
+                      workoutId: widget.workoutId,
+                    ),
+                  ),
+                );
+              }),
+              TapScale(
+                onTap: () => ref
                     .read(activeWorkoutProvider.notifier)
-                    .removeExercise(workoutExercise.id),
+                    .addSet(widget.workoutExercise.id),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, size: 14, color: c.textMuted),
+                      const SizedBox(width: 4),
+                      Text('Set hinzufügen',
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          )),
+                    ],
+                  ),
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 4),
-          // Header row
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                SizedBox(width: 40, child: Text('SET',
-                    style: TextStyle(color: IronRepColors.textMuted, fontSize: 11))),
-                SizedBox(width: 48),
-                Expanded(child: Center(child: Text('KG',
-                    style: TextStyle(color: IronRepColors.textMuted, fontSize: 11)))),
-                SizedBox(width: 8),
-                SizedBox(width: 14),
-                SizedBox(width: 8),
-                Expanded(child: Center(child: Text('REPS',
-                    style: TextStyle(color: IronRepColors.textMuted, fontSize: 11)))),
-                SizedBox(width: 48),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          setsAsync.when(
-            data: (sets) => Column(
-              children: [
-                ...sets.map((s) => Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: IronRepSpacing.xs),
-                      child: _SetRow(
-                        set_: s,
-                        workoutExerciseId: workoutExercise.id,
-                        exerciseId: workoutExercise.exerciseId,
-                        workoutId: workoutId,
-                      ),
-                    )),
-                TextButton.icon(
-                  onPressed: () => ref
-                      .read(activeWorkoutProvider.notifier)
-                      .addSet(workoutExercise.id),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Set'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: IronRepColors.accent,
-                  ),
-                ),
-              ],
-            ),
-            loading: () => const SizedBox(height: 40),
-            error: (e, _) => Text('Error: $e'),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
+      loading: () => const SizedBox(height: 40),
+      error: (e, _) => Text('Error: $e'),
     );
   }
 }
 
 class _SetRow extends ConsumerStatefulWidget {
   final WorkoutSet set_;
+  final WorkoutSet? previousSet;
   final int workoutExerciseId;
   final int exerciseId;
   final int workoutId;
 
   const _SetRow({
     required this.set_,
+    this.previousSet,
     required this.workoutExerciseId,
     required this.exerciseId,
     required this.workoutId,
@@ -137,10 +241,22 @@ class _SetRowState extends ConsumerState<_SetRow> {
   @override
   void initState() {
     super.initState();
-    _weightCtrl = TextEditingController(
-        text: widget.set_.weight?.toStringAsFixed(1) ?? '');
-    _repsCtrl = TextEditingController(
-        text: widget.set_.reps?.toString() ?? '');
+    final w = widget.set_.weight ?? widget.previousSet?.weight;
+    final r = widget.set_.reps ?? widget.previousSet?.reps;
+    _weightCtrl =
+        TextEditingController(text: w != null ? w.toStringAsFixed(1) : '');
+    _repsCtrl = TextEditingController(text: r != null ? '$r' : '');
+
+    if (widget.set_.weight == null && w != null ||
+        widget.set_.reps == null && r != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(activeWorkoutProvider.notifier).updateSet(
+              widget.set_.id,
+              weight: w,
+              reps: r?.toInt(),
+            );
+      });
+    }
   }
 
   @override
@@ -150,114 +266,101 @@ class _SetRowState extends ConsumerState<_SetRow> {
     super.dispose();
   }
 
+  String? get _prevWeightHint {
+    final pw = widget.previousSet?.weight;
+    return pw != null ? pw.toStringAsFixed(1) : null;
+  }
+
+  String? get _prevRepsHint {
+    final pr = widget.previousSet?.reps;
+    return pr != null ? '$pr' : null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = widget.set_;
     final isCompleted = s.isCompleted;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: isCompleted ? IronRepColors.successDim : IronRepColors.elevated,
+        color: isCompleted
+            ? c.success.withValues(alpha: 0.08)
+            : c.surface,
         borderRadius: BorderRadius.circular(10),
+        border: isCompleted
+            ? Border.all(color: c.success.withValues(alpha: 0.2))
+            : null,
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 40,
+            width: 28,
             child: Text(
               '${s.setNumber}',
               style: TextStyle(
-                color: isCompleted
-                    ? IronRepColors.success
-                    : IronRepColors.textSecondary,
+                color: isCompleted ? c.success : c.textMuted,
                 fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
-            ),
-          ),
-          SizedBox(
-            width: 48,
-            child: Text(
-              SetType.values
-                  .firstWhere((t) => t.name == s.setType,
-                      orElse: () => SetType.working)
-                  .label,
-              style: const TextStyle(
-                  color: IronRepColors.textMuted, fontSize: 11),
             ),
           ),
           Expanded(
-            child: TextField(
+            child: _CompactInput(
               controller: _weightCtrl,
               enabled: !isCompleted,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: IronRepColors.textPrimary,
-                  fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(
-                hintText: 'kg',
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-              ),
+              hint: _prevWeightHint ?? '–',
+              suffix: 'kg',
+              decimal: true,
               onChanged: (v) {
-                final w = double.tryParse(v);
                 ref.read(activeWorkoutProvider.notifier).updateSet(
                       s.id,
-                      weight: w,
+                      weight: double.tryParse(v),
                       reps: int.tryParse(_repsCtrl.text),
                     );
               },
             ),
           ),
-          const Text('×',
-              style: TextStyle(color: IronRepColors.textMuted)),
+          const SizedBox(width: 8),
           Expanded(
-            child: TextField(
+            child: _CompactInput(
               controller: _repsCtrl,
               enabled: !isCompleted,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: IronRepColors.textPrimary,
-                  fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(
-                hintText: 'reps',
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-              ),
+              hint: _prevRepsHint ?? '–',
+              suffix: 'reps',
+              decimal: false,
               onChanged: (v) {
-                final r = int.tryParse(v);
                 ref.read(activeWorkoutProvider.notifier).updateSet(
                       s.id,
                       weight: double.tryParse(_weightCtrl.text),
-                      reps: r,
+                      reps: int.tryParse(v),
                     );
               },
             ),
           ),
-          IconButton(
-            icon: Icon(
-              isCompleted
-                  ? Icons.check_circle
-                  : Icons.check_circle_outline,
-              color: isCompleted
-                  ? IronRepColors.success
-                  : IronRepColors.textMuted,
-            ),
-            onPressed: isCompleted
-                ? null
+          const SizedBox(width: 8),
+          TapScale(
+            onTap: isCompleted
+                ? () async {
+                    await ref
+                        .read(activeWorkoutProvider.notifier)
+                        .uncompleteSet(s.id);
+                    HapticFeedback.lightImpact();
+                  }
                 : () async {
-                    // Save values first
-                    final w = double.tryParse(_weightCtrl.text);
-                    final r = int.tryParse(_repsCtrl.text);
-                    if (w != null) {
+                    var w = double.tryParse(_weightCtrl.text);
+                    var r = int.tryParse(_repsCtrl.text);
+                    if (w == null && widget.previousSet?.weight != null) {
+                      w = widget.previousSet!.weight!;
+                      _weightCtrl.text = w.toStringAsFixed(1);
+                    }
+                    if (r == null && widget.previousSet?.reps != null) {
+                      r = widget.previousSet!.reps!;
+                      _repsCtrl.text = '$r';
+                    }
+                    if (w != null || r != null) {
                       await ref
                           .read(activeWorkoutProvider.notifier)
                           .updateSet(s.id, weight: w, reps: r);
@@ -266,17 +369,89 @@ class _SetRowState extends ConsumerState<_SetRow> {
                         .read(activeWorkoutProvider.notifier)
                         .completeSet(s.id);
                     HapticFeedback.mediumImpact();
-
-                    // Start rest timer
-                    final restSeconds = await ref
-                        .read(defaultRestSecondsProvider.future);
-                    ref
-                        .read(restTimerProvider.notifier)
-                        .start(restSeconds);
+                    final restSeconds =
+                        await ref.read(defaultRestSecondsProvider.future);
+                    ref.read(restTimerProvider.notifier).start(restSeconds);
                   },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isCompleted ? c.success : Colors.transparent,
+                border: isCompleted ? null : Border.all(color: c.border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.check_rounded,
+                size: 18,
+                color: isCompleted ? Colors.white : c.textMuted,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CompactInput extends StatelessWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final String hint;
+  final String suffix;
+  final bool decimal;
+  final ValueChanged<String> onChanged;
+
+  const _CompactInput({
+    required this.controller,
+    required this.enabled,
+    required this.hint,
+    required this.suffix,
+    required this.decimal,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: enabled,
+            keyboardType: decimal
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.number,
+            inputFormatters:
+                decimal ? null : [FilteringTextInputFormatter.digitsOnly],
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: c.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: c.textMuted,
+                fontWeight: FontWeight.w400,
+              ),
+              isDense: true,
+              filled: false,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            onChanged: onChanged,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          suffix,
+          style: TextStyle(color: c.textMuted, fontSize: 11),
+        ),
+      ],
     );
   }
 }

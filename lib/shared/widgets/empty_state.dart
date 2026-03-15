@@ -18,13 +18,14 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(IronRepSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: IronRepColors.textMuted),
+            Icon(icon, size: 64, color: c.textMuted),
             const SizedBox(height: IronRepSpacing.lg),
             Text(
               title,

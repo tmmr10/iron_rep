@@ -20,12 +20,12 @@ class ExerciseProgressScreen extends ConsumerWidget {
         title: exerciseAsync.whenOrNull(
               data: (e) => Text(e.name),
             ) ??
-            const Text('Progress'),
+            const Text('Fortschritt'),
       ),
       body: ListView(
         padding: IronRepSpacing.screenPadding,
         children: [
-          Text('Strength Over Time',
+          Text('Kraftentwicklung',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: IronRepSpacing.md),
           SizedBox(
@@ -33,7 +33,7 @@ class ExerciseProgressScreen extends ConsumerWidget {
             child: StrengthChart(exerciseId: exerciseId),
           ),
           const SizedBox(height: IronRepSpacing.xl),
-          Text('Personal Records',
+          Text('Persönliche Rekorde',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: IronRepSpacing.md),
           _RecordsSection(exerciseId: exerciseId),
@@ -49,14 +49,15 @@ class _RecordsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final db = ref.watch(databaseProvider);
     return FutureBuilder(
       future: db.workoutDao.getRecordsForExercise(exerciseId),
       builder: (context, snapshot) {
         final records = snapshot.data;
         if (records == null || records.isEmpty) {
-          return const Text('No records yet',
-              style: TextStyle(color: IronRepColors.textMuted));
+          return Text('Noch keine Rekorde',
+              style: TextStyle(color: c.textMuted));
         }
         return Column(
           children: records.map((r) {
@@ -80,11 +81,10 @@ class _RecordsSection extends ConsumerWidget {
               dense: true,
               contentPadding: EdgeInsets.zero,
               title: Text(label,
-                  style:
-                      const TextStyle(color: IronRepColors.textPrimary)),
+                  style: TextStyle(color: c.textPrimary)),
               trailing: Text(value,
-                  style: const TextStyle(
-                    color: IronRepColors.accent,
+                  style: TextStyle(
+                    color: c.accent,
                     fontWeight: FontWeight.w700,
                   )),
             );

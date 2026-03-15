@@ -50,6 +50,7 @@ final exerciseWithEquipmentProvider =
       orElse: () => ExerciseCategory.compound,
     ),
     isCustom: exercise.isCustom,
+    trackWeight: exercise.trackWeight,
     equipment: equipment
         .map((e) => EquipmentType.values.firstWhere(
               (eq) => eq.name == e.equipmentType,

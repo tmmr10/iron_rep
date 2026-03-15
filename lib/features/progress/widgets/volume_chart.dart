@@ -10,19 +10,20 @@ class VolumeChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final dataAsync = ref.watch(volumePerWorkoutProvider);
 
     return dataAsync.when(
       data: (data) {
         if (data.isEmpty) {
-          return const Center(
-            child: Text('No data yet',
-                style: TextStyle(color: IronRepColors.textMuted)),
+          return Center(
+            child: Text('Noch keine Daten',
+                style: TextStyle(color: c.textMuted)),
           );
         }
 
-        final maxVol = data.map((d) => d.volume).reduce(
-            (a, b) => a > b ? a : b);
+        final maxVol =
+            data.map((d) => d.volume).reduce((a, b) => a > b ? a : b);
 
         return BarChart(
           BarChartData(
@@ -33,10 +34,10 @@ class VolumeChart extends ConsumerWidget {
                 barRods: [
                   BarChartRodData(
                     toY: e.value.volume,
-                    color: IronRepColors.accent,
+                    color: c.accent,
                     width: 12,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(4)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                 ],
               );
@@ -59,8 +60,7 @@ class VolumeChart extends ConsumerWidget {
                     final d = data[idx].date;
                     return Text(
                       '${d.day}.${d.month}',
-                      style: const TextStyle(
-                          color: IronRepColors.textMuted, fontSize: 10),
+                      style: TextStyle(color: c.textMuted, fontSize: 10),
                     );
                   },
                 ),
@@ -73,8 +73,7 @@ class VolumeChart extends ConsumerWidget {
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   return BarTooltipItem(
                     '${rod.toY.toStringAsFixed(0)} kg',
-                    const TextStyle(
-                        color: IronRepColors.textPrimary, fontSize: 12),
+                    TextStyle(color: c.textPrimary, fontSize: 12),
                   );
                 },
               ),

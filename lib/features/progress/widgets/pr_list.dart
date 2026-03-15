@@ -10,24 +10,25 @@ class PrList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final recordsAsync = ref.watch(allPersonalRecordsProvider);
     final exercisesAsync = ref.watch(allExercisesProvider);
 
     return recordsAsync.when(
       data: (records) {
         if (records.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('No personal records yet',
-                style: TextStyle(color: IronRepColors.textMuted)),
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Noch keine persönlichen Rekorde',
+                style: TextStyle(color: c.textMuted)),
           );
         }
 
         final exerciseNames = exercisesAsync.whenOrNull(
-          data: (list) => {for (final e in list) e.id: e.name},
-        ) ?? {};
+              data: (list) => {for (final e in list) e.id: e.name},
+            ) ??
+            {};
 
-        // Group by exercise, show max_weight only for brevity
         final weightRecords =
             records.where((r) => r.recordType == 'max_weight').toList();
 
@@ -36,21 +37,20 @@ class PrList extends ConsumerWidget {
             return ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.emoji_events,
-                  color: IronRepColors.warning, size: 20),
+              leading: Icon(Icons.emoji_events,
+                  color: c.warning, size: 20),
               title: Text(
                 exerciseNames[r.exerciseId] ?? 'Exercise #${r.exerciseId}',
-                style: const TextStyle(color: IronRepColors.textPrimary),
+                style: TextStyle(color: c.textPrimary),
               ),
               subtitle: Text(
                 '${r.achievedAt.day}.${r.achievedAt.month}.${r.achievedAt.year}',
-                style: const TextStyle(
-                    color: IronRepColors.textMuted, fontSize: 12),
+                style: TextStyle(color: c.textMuted, fontSize: 12),
               ),
               trailing: Text(
                 '${r.value.toStringAsFixed(1)} kg',
-                style: const TextStyle(
-                  color: IronRepColors.accent,
+                style: TextStyle(
+                  color: c.accent,
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),

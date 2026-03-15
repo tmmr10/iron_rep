@@ -17,10 +17,11 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
 
   // --- Workout CRUD ---
 
-  Future<int> startWorkout({String? name}) async {
+  Future<int> startWorkout({String? name, int? planId}) async {
     return into(workouts).insert(WorkoutsCompanion.insert(
       startedAt: DateTime.now(),
       name: Value(name),
+      planId: Value(planId),
       isActive: const Value(true),
     ));
   }
@@ -133,6 +134,15 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<void> uncompleteSet(int setId) async {
+    await (update(workoutSets)..where((t) => t.id.equals(setId))).write(
+      const WorkoutSetsCompanion(
+        isCompleted: Value(false),
+        completedAt: Value(null),
+      ),
+    );
+  }
+
   Future<void> deleteSet(int setId) async {
     await (delete(workoutSets)..where((t) => t.id.equals(setId))).go();
   }
@@ -229,6 +239,29 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
           workoutId: workoutId,
         ),
       );
+    }
+  }
+
+  Future<void> recalculatePersonalRecords(int workoutId) async {
+    final wes = await getWorkoutExercises(workoutId);
+    for (final we in wes) {
+      // Delete existing records for this exercise
+      await (delete(personalRecords)
+            ..where((t) => t.exerciseId.equals(we.exerciseId)))
+          .go();
+
+      // Scan ALL completed sets across ALL workouts for this exercise
+      final allWes = await (select(workoutExercises)
+            ..where((t) => t.exerciseId.equals(we.exerciseId)))
+          .get();
+
+      for (final awe in allWes) {
+        final sets = await getSetsForWorkoutExercise(awe.id);
+        final completedSets =
+            sets.where((s) => s.isCompleted == true).toList();
+        await updatePersonalRecords(
+            we.exerciseId, awe.workoutId, completedSets);
+      }
     }
   }
 
