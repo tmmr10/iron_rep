@@ -18,7 +18,6 @@ class HistoryTab extends ConsumerStatefulWidget {
 class _HistoryTabState extends ConsumerState<HistoryTab> {
   @override
   Widget build(BuildContext context) {
-    final c = AppColors.of(context);
     final history = ref.watch(enrichedWorkoutHistoryProvider);
 
     return Scaffold(

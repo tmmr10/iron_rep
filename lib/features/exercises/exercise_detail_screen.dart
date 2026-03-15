@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/exercise_providers.dart';
 import '../../shared/design_system.dart';
-import '../../shared/widgets/iron_card.dart';
 import '../../shared/widgets/muscle_group_chip.dart';
 import 'edit_exercise_sheet.dart';
 

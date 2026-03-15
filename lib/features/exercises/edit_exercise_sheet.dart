@@ -208,7 +208,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
             ),
             Switch.adaptive(
               value: _trackWeight,
-              activeColor: c.accent,
+              activeTrackColor: c.accent,
               onChanged: (v) => setState(() => _trackWeight = v),
             ),
           ],

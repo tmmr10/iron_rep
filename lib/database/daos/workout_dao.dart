@@ -52,6 +52,10 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> cancelWorkout(int workoutId) async {
+    // Clean up personal records referencing this workout
+    await (delete(personalRecords)
+          ..where((t) => t.workoutId.equals(workoutId)))
+        .go();
     await (delete(workoutSets)
           ..where((t) => t.workoutExerciseId.isInQuery(
               selectOnly(workoutExercises)

@@ -97,10 +97,10 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       final allExercises = await db.exerciseDao.getAll();
 
       for (final pe in planExercises) {
-        final exercise = allExercises.firstWhere(
-          (e) => e.id == pe.exerciseId,
-          orElse: () => allExercises.first,
-        );
+        final exercise = allExercises
+            .where((e) => e.id == pe.exerciseId)
+            .firstOrNull;
+        if (exercise == null) continue;
         _exercises.add(_PlanExerciseEntry(
           exerciseId: pe.exerciseId,
           name: exercise.name,
@@ -537,11 +537,11 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     final db = ref.read(databaseProvider);
     final allExercises = await db.exerciseDao.getAll();
 
-    final shareableExercises = _exercises.map((entry) {
-      final exercise = allExercises.firstWhere(
-        (e) => e.id == entry.exerciseId,
-        orElse: () => allExercises.first,
-      );
+    final shareableExercises = _exercises.where((entry) {
+      return allExercises.any((e) => e.id == entry.exerciseId);
+    }).map((entry) {
+      final exercise =
+          allExercises.firstWhere((e) => e.id == entry.exerciseId);
       return ShareableExercise(
         nameKey: exercise.nameKey,
         targetSets: entry.targetSets,
