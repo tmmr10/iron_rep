@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../database/app_database.dart';
 import '../../providers/plan_providers.dart';
+import '../../services/plan_sharing_service.dart';
 import '../../providers/settings_providers.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
+import '../../shared/widgets/section_header.dart';
 import '../../shared/widgets/tap_scale.dart';
 
 class WorkoutTab extends ConsumerWidget {
@@ -50,7 +53,7 @@ class WorkoutTab extends ConsumerWidget {
       body: plansAsync.when(
           data: (plans) {
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
               children: [
                 Row(
                   children: [
@@ -77,26 +80,7 @@ class WorkoutTab extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Text(
-                      'DEINE WORKOUTS',
-                      style: TextStyle(
-                        color: c.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        color: c.border.withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ],
-                ),
+                SectionHeader(title: 'Deine Workouts'),
                 const SizedBox(height: 16),
                 if (activeWorkout.isActive) ...[
                   _ResumeCard(
@@ -118,62 +102,128 @@ class WorkoutTab extends ConsumerWidget {
                       ),
                   const SizedBox(height: 20),
                 ],
-                ...plans.asMap().entries.map((entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _PlanCard(
-                        plan: entry.value,
-                        isDisabled: activeWorkout.isActive,
-                        onTap: () => _showPlanDetail(
-                            context, ref, entry.value, activeWorkout.isActive),
-                        onPlay: () =>
-                            _startPlan(context, ref, entry.value),
-                      )
-                          .animate()
-                          .fadeIn(
-                            duration: 400.ms,
-                            delay: (100 * entry.key).ms,
-                          )
-                          .slideY(
-                            begin: 0.1,
-                            duration: 400.ms,
-                            delay: (100 * entry.key).ms,
-                            curve: Curves.easeOut,
-                          ),
-                    )),
-                const SizedBox(height: 8),
-                TapScale(
-                  onTap: () => context.push('/plan-editor'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                if (plans.isEmpty) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.border,
-                        strokeAlign: BorderSide.strokeAlignInside,
-                      ),
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
                       children: [
-                        Icon(Icons.add, color: c.textMuted, size: 18),
-                        const SizedBox(width: 8),
+                        Icon(Icons.fitness_center,
+                            color: c.textMuted, size: 40),
+                        const SizedBox(height: 16),
                         Text(
-                          'Neuer Plan',
+                          'Erstelle deinen ersten Trainingsplan',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: c.textMuted,
-                            fontWeight: FontWeight.w500,
+                            color: c.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Wähle deine Übungen, lege die Sets fest und starte dein Training.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: c.textSecondary,
                             fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TapScale(
+                          onTap: () => context.push('/plan-editor'),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: c.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: c.accent.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, color: c.accent, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Plan erstellen',
+                                  style: TextStyle(
+                                    color: c.accent,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ] else ...[
+                  ...plans.asMap().entries.map((entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _PlanCard(
+                          plan: entry.value,
+                          isDisabled: activeWorkout.isActive,
+                          onTap: () => _showPlanDetail(
+                              context, ref, entry.value, activeWorkout.isActive),
+                          onPlay: () =>
+                              _startPlan(context, ref, entry.value),
+                        )
+                            .animate()
+                            .fadeIn(
+                              duration: 400.ms,
+                              delay: (100 * entry.key).ms,
+                            )
+                            .slideY(
+                              begin: 0.1,
+                              duration: 400.ms,
+                              delay: (100 * entry.key).ms,
+                              curve: Curves.easeOut,
+                            ),
+                      )),
+                  const SizedBox(height: 8),
+                  TapScale(
+                    onTap: () => context.push('/plan-editor'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: c.border,
+                          strokeAlign: BorderSide.strokeAlignInside,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, color: c.textMuted, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Neuer Plan',
+                            style: TextStyle(
+                              color: c.textMuted,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => Center(child: Text('Fehler: $e')),
         ),
     );
   }
@@ -191,16 +241,17 @@ class WorkoutTab extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _PlanDetailSheet(
         plan: plan,
         isDisabled: hasActiveWorkout,
         onEdit: () {
-          Navigator.pop(context);
+          Navigator.of(context, rootNavigator: true).pop();
           context.push('/plan-editor', extra: plan.id);
         },
         onStart: () {
-          Navigator.pop(context);
+          Navigator.of(context, rootNavigator: true).pop();
           _startPlan(context, ref, plan);
         },
       ),
@@ -280,7 +331,7 @@ class _ResumeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    planName ?? 'Workout',
+                    planName ?? 'Training',
                     style: TextStyle(
                       color: c.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -372,7 +423,7 @@ class _PlanCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: c.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: c.border.withValues(alpha: 0.5)),
+          border: Border.all(color: c.border.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [

@@ -37,7 +37,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
     final result = await showModalBottomSheet<({int id, String name})>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.of(context).background,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -149,7 +149,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => Center(child: Text('Fehler: $e')),
           ),
         ),
       ],

@@ -7,6 +7,7 @@ import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/iron_card.dart';
+import '../../shared/widgets/tap_scale.dart';
 import '../plans/exercise_picker_sheet.dart';
 
 class WorkoutDetailScreen extends ConsumerStatefulWidget {
@@ -30,8 +31,15 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   final List<_NewSet> _newSets = [];
   final List<_NewExercise> _newExercises = [];
   final Set<int> _deletedExerciseIds = {}; // workoutExerciseIds to remove
+  final _nameController = TextEditingController();
   int _newSetIdCounter = -1;
   int _newExerciseIdCounter = -1;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -53,6 +61,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   void _startEditing() {
     setState(() {
       _isEditing = true;
+      _nameController.text = _detail?.workout.name ?? '';
       _editedSets.clear();
       _deletedSetIds.clear();
       _newSets.clear();
@@ -62,7 +71,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   }
 
   bool get _hasEditChanges {
-    return _editedSets.isNotEmpty ||
+    final nameChanged = _nameController.text.trim() != (_detail?.workout.name ?? '');
+    return nameChanged ||
+        _editedSets.isNotEmpty ||
         _deletedSetIds.isNotEmpty ||
         _newSets.isNotEmpty ||
         _newExercises.isNotEmpty ||
@@ -106,6 +117,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
 
   Future<void> _saveEdits() async {
     final db = ref.read(databaseProvider);
+
+    // Update workout name
+    final newName = _nameController.text.trim();
+    if (newName.isNotEmpty && newName != _detail?.workout.name) {
+      await db.workoutDao.updateWorkoutName(widget.workoutId, newName);
+    }
 
     // Delete removed exercises
     for (final weId in _deletedExerciseIds) {
@@ -160,10 +177,15 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     // Recalculate personal records
     await db.workoutDao.recalculatePersonalRecords(widget.workoutId);
 
-    // Reload
+    // Reload — clear edit state first so _hasEditChanges returns false
     setState(() {
       _isEditing = false;
       _loading = true;
+      _editedSets.clear();
+      _deletedSetIds.clear();
+      _newSets.clear();
+      _newExercises.clear();
+      _deletedExerciseIds.clear();
     });
     await _loadDetail();
   }
@@ -250,28 +272,43 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       appBar: AppBar(
         title: const Text('Workout Details'),
         actions: [
-          if (!_isEditing) ...[
+          if (!_isEditing)
             IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: _startEditing,
-            ),
-            TextButton(
-              onPressed: () => _confirmDelete(context),
-              child: Text('Löschen', style: TextStyle(color: c.error)),
-            ),
-          ] else ...[
+              icon: Icon(Icons.more_horiz, color: c.textSecondary),
+              onPressed: () => _showOptions(context, c),
+            )
+          else
             TextButton(
               onPressed: _cancelEditing,
               child: const Text('Abbrechen'),
             ),
-          ],
         ],
       ),
       body: ListView(
         padding: IronRepSpacing.screenPadding,
         children: [
-          Text(w.name ?? 'Workout',
-              style: Theme.of(context).textTheme.headlineMedium),
+          if (_isEditing)
+            _GradientNameField(
+              controller: _nameController,
+              colors: c,
+              hintText: 'Workout Name',
+            )
+          else
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [c.accentGradientStart, c.accentGradientEnd],
+              ).createShader(bounds),
+              blendMode: BlendMode.srcIn,
+              child: Text(
+                w.name ?? 'Workout',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
           const SizedBox(height: 4),
           Text(
             '${w.startedAt.day}.${w.startedAt.month}.${w.startedAt.year} · $duration',
@@ -324,18 +361,28 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
               ),
             ),
             const SizedBox(height: IronRepSpacing.lg),
-            FilledButton(
-              onPressed: _saveEdits,
-              style: FilledButton.styleFrom(
-                backgroundColor: c.accent,
-                foregroundColor: c.background,
+            TapScale(
+              onTap: () => _saveEdits(),
+              child: Container(
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  color: c.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: c.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  'Änderungen speichern',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: c.accent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-              child: const Text('Speichern',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             ),
             const SizedBox(height: IronRepSpacing.lg),
           ],
@@ -369,17 +416,24 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                         ? null
                         : () => context
                             .push('/exercise-detail/${ed.exerciseId}'),
-                    child: Text(
-                      ed.exerciseName,
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        decoration: _isEditing
-                            ? null
-                            : TextDecoration.underline,
-                        decorationColor: c.textMuted,
-                      ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            ed.exerciseName,
+                            style: TextStyle(
+                              color: c.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        if (!_isEditing) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right,
+                              color: c.textMuted, size: 18),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -670,6 +724,94 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     );
   }
 
+  void _showOptions(BuildContext context, AppColors c) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _startEditing();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      'Bearbeiten',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDelete(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Text(
+                      'Workout löschen',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final c = AppColors.of(context);
     final confirmed = await showDialog<bool>(
@@ -795,4 +937,71 @@ Future<_WorkoutDetail> _loadWorkoutDetail(
   }
 
   return _WorkoutDetail(workout, exercises, skippedNames);
+}
+
+class _GradientNameField extends StatefulWidget {
+  final TextEditingController controller;
+  final AppColors colors;
+  final String hintText;
+
+  const _GradientNameField({
+    required this.controller,
+    required this.colors,
+    this.hintText = 'Name',
+  });
+
+  @override
+  State<_GradientNameField> createState() => _GradientNameFieldState();
+}
+
+class _GradientNameFieldState extends State<_GradientNameField> {
+  bool _hasFocus = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Focus(
+          onFocusChange: (focused) => setState(() => _hasFocus = focused),
+          child: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [c.accentGradientStart, c.accentGradientEnd],
+            ).createShader(bounds),
+            blendMode: BlendMode.srcIn,
+            child: TextField(
+              controller: widget.controller,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                hintStyle: TextStyle(
+                  color: c.textMuted.withValues(alpha: 0.4),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                ),
+                border: InputBorder.none,
+                filled: false,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 2,
+          margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(
+            color: _hasFocus ? c.accent : c.border.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      ],
+    );
+  }
 }

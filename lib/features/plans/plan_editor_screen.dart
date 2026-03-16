@@ -7,6 +7,7 @@ import '../../models/enums.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/plan_providers.dart';
+import '../../providers/workout_providers.dart';
 import '../../services/plan_sharing_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/tap_scale.dart';
@@ -88,31 +89,35 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
   }
 
   Future<void> _loadPlan() async {
-    if (widget.planId != null) {
-      final db = ref.read(databaseProvider);
-      final plan = await db.planDao.getPlan(widget.planId!);
-      _nameController.text = plan.name;
+    try {
+      if (widget.planId != null) {
+        final db = ref.read(databaseProvider);
+        final plan = await db.planDao.getPlan(widget.planId!);
+        _nameController.text = plan.name;
 
-      final planExercises = await db.planDao.getPlanExercises(widget.planId!);
-      final allExercises = await db.exerciseDao.getAll();
+        final planExercises = await db.planDao.getPlanExercises(widget.planId!);
+        final allExercises = await db.exerciseDao.getAll();
 
-      for (final pe in planExercises) {
-        final exercise = allExercises
-            .where((e) => e.id == pe.exerciseId)
-            .firstOrNull;
-        if (exercise == null) continue;
-        _exercises.add(_PlanExerciseEntry(
-          exerciseId: pe.exerciseId,
-          name: exercise.name,
-          muscleGroup: exercise.primaryMuscleGroup,
-          targetSets: pe.targetSets,
-        ));
+        for (final pe in planExercises) {
+          final exercise = allExercises
+              .where((e) => e.id == pe.exerciseId)
+              .firstOrNull;
+          if (exercise == null) continue;
+          _exercises.add(_PlanExerciseEntry(
+            exerciseId: pe.exerciseId,
+            name: exercise.name,
+            muscleGroup: exercise.primaryMuscleGroup,
+            targetSets: pe.targetSets,
+          ));
+        }
       }
+    } catch (_) {
+      // Plan could not be loaded — show editor with empty state
     }
     _originalName = _nameController.text.trim();
     _originalExercises =
         _exercises.map((e) => (e.exerciseId, e.targetSets)).toList();
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -134,6 +139,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         if (shouldPop && mounted) context.pop();
       },
       child: Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
         title: Text(isEditing ? 'Plan bearbeiten' : 'Neuer Plan'),
         actions: [
@@ -268,23 +274,16 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                                     ),
                                   ),
                                 )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.check_rounded,
-                                        color: c.accent, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      isEditing
-                                          ? 'Änderungen speichern'
-                                          : 'Plan erstellen',
-                                      style: TextStyle(
-                                        color: c.accent,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
+                              : Text(
+                                  isEditing
+                                      ? 'Änderungen speichern'
+                                      : 'Plan erstellen',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: c.accent,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
                                 ),
                         ),
                       ),
@@ -428,6 +427,9 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     }
 
     ref.invalidate(allPlansProvider);
+    if (widget.planId != null) {
+      ref.invalidate(planExerciseNamesProvider(widget.planId!));
+    }
     if (mounted) context.pop();
   }
 
@@ -467,27 +469,20 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: c.accent.withValues(alpha: 0.08),
+                      color: c.accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: c.accent.withValues(alpha: 0.2),
+                        color: c.accent.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.share_outlined,
-                            color: c.accent, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Plan teilen',
-                          style: TextStyle(
-                            color: c.accent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Plan teilen',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -507,21 +502,14 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                         color: c.error.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.delete_outline,
-                            color: c.error, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Plan löschen',
-                          style: TextStyle(
-                            color: c.error,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Plan löschen',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -552,12 +540,29 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       );
     }).toList();
 
+    final planName = _nameController.text.trim();
     final encoded = PlanSharingService.encodePlan(
-      _nameController.text.trim(),
+      planName,
       shareableExercises,
     );
+    final totalSets = _exercises.fold<int>(0, (s, e) => s + e.targetSets);
+    final exerciseLines = _exercises.asMap().entries.map((entry) {
+      final i = entry.key + 1;
+      final ex = entry.value;
+      return '$i. ${ex.name} — ${ex.targetSets} Sets';
+    }).join('\n');
     final url = PlanSharingService.buildShareUrl(encoded);
-    await Share.share(url);
+    final message = '💪 $planName\n'
+        '${_exercises.length} Übungen · $totalSets Sets\n\n'
+        '$exerciseLines\n\n'
+        'Plan in IronRep importieren:\n$url';
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      message,
+      subject: '$planName — IronRep Trainingsplan',
+      sharePositionOrigin:
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
   }
 
   Future<void> _deletePlan() async {
@@ -565,9 +570,11 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: c.card,
-        title: const Text('Plan löschen?'),
-        content: const Text('Das kann nicht rückgängig gemacht werden.'),
+        backgroundColor: c.surface,
+        title: Text('Plan löschen?',
+            style: TextStyle(color: c.textPrimary)),
+        content: Text('Das kann nicht rückgängig gemacht werden.',
+            style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

@@ -36,6 +36,12 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
         .watchSingleOrNull();
   }
 
+  Future<void> updateWorkoutName(int workoutId, String name) async {
+    await (update(workouts)..where((t) => t.id.equals(workoutId))).write(
+      WorkoutsCompanion(name: Value(name)),
+    );
+  }
+
   Future<void> finishWorkout(int workoutId) async {
     final now = DateTime.now();
     final workout = await (select(workouts)
@@ -233,8 +239,8 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
               t.recordType.equals(type)))
         .getSingleOrNull();
 
-    if (existing == null || value > existing.value) {
-      await into(personalRecords).insertOnConflictUpdate(
+    if (existing == null) {
+      await into(personalRecords).insert(
         PersonalRecordsCompanion.insert(
           exerciseId: exerciseId,
           recordType: type,
@@ -243,6 +249,14 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase>
           workoutId: workoutId,
         ),
       );
+    } else if (value > existing.value) {
+      await (update(personalRecords)
+            ..where((t) => t.id.equals(existing.id)))
+          .write(PersonalRecordsCompanion(
+        value: Value(value),
+        achievedAt: Value(DateTime.now()),
+        workoutId: Value(workoutId),
+      ));
     }
   }
 

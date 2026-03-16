@@ -144,7 +144,7 @@ class _ListModeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          state.planName ?? 'Workout',
+                          state.planName ?? 'Training',
                           style: TextStyle(
                             color: c.textPrimary,
                             fontWeight: FontWeight.w700,
@@ -317,7 +317,7 @@ class _ListModeScreen extends ConsumerWidget {
                     },
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('Error: $e')),
+                    error: (e, _) => Center(child: Text('Fehler: $e')),
                   ),
                   const Positioned(
                     left: 0,
@@ -436,8 +436,10 @@ class _ListModeScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: const Text('Workout verwerfen?'),
-        content: const Text('Alle Fortschritte gehen verloren.'),
+        title: Text('Workout verwerfen?',
+            style: TextStyle(color: c.textPrimary)),
+        content: Text('Alle Fortschritte gehen verloren.',
+            style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -487,7 +489,7 @@ class _PreStartView extends ConsumerWidget {
                   ),
                   Expanded(
                     child: Text(
-                      state.planName ?? 'Workout',
+                      state.planName ?? 'Training',
                       style: TextStyle(
                         color: c.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -547,7 +549,7 @@ class _PreStartView extends ConsumerWidget {
                 },
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (e, _) => Center(child: Text('Fehler: $e')),
               ),
             ),
             Padding(

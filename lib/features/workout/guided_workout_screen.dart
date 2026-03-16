@@ -412,7 +412,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
           },
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) => Center(child: Text('Fehler: $e')),
         ),
       ),
     );
@@ -560,21 +560,14 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                         color: c.accent.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle_outline,
-                            color: c.accent, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Workout beenden',
-                          style: TextStyle(
-                            color: c.accent,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Workout beenden',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -594,21 +587,14 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                         color: c.error.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.delete_outline,
-                            color: c.error, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Workout verwerfen',
-                          style: TextStyle(
-                            color: c.error,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Workout verwerfen',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -625,8 +611,10 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: const Text('Workout verwerfen?'),
-        content: const Text('Alle Fortschritte gehen verloren.'),
+        title: Text('Workout verwerfen?',
+            style: TextStyle(color: c.textPrimary)),
+        content: Text('Alle Fortschritte gehen verloren.',
+            style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -704,9 +692,45 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
           }
         });
       } else {
-        _finishWorkout();
+        _showAllCompletedDialog();
       }
     }
+  }
+
+  void _showAllCompletedDialog() {
+    final c = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Alle Übungen abgeschlossen!',
+            style: TextStyle(color: c.textPrimary)),
+        content: Text('Möchtest du das Workout beenden?',
+            style: TextStyle(color: c.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Weiter trainieren',
+              style: TextStyle(color: c.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _finishWorkout();
+            },
+            child: Text(
+              'Workout beenden',
+              style: TextStyle(
+                color: c.accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _finishWorkout() async {
