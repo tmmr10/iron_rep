@@ -6,6 +6,7 @@ import '../../database/app_database.dart';
 import '../../models/enums.dart';
 import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
+import '../../shared/widgets/tap_scale.dart';
 
 class CreateExerciseSheet extends ConsumerStatefulWidget {
   const CreateExerciseSheet({super.key});
@@ -109,13 +110,28 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
             const SizedBox(height: 20),
 
             // Name
-            TextField(
-              controller: _nameController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Name der Übung',
-                hintText: 'z.B. Kurzhantel Seitheben',
+            Text('Name der Übung',
+                style: TextStyle(color: c.textSecondary, fontSize: 13)),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: c.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.border.withValues(alpha: 0.3)),
+              ),
+              child: TextField(
+                controller: _nameController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                style: TextStyle(color: c.textPrimary, fontSize: 15),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'z.B. Kurzhantel Seitheben',
+                  hintStyle: TextStyle(color: c.textMuted),
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -142,7 +158,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                       border: Border.all(
                         color: selected
                             ? m.color
-                            : c.border.withValues(alpha: 0.5),
+                            : c.border.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -179,7 +195,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                   side: BorderSide(
                     color: selected
                         ? c.accent
-                        : c.border.withValues(alpha: 0.5),
+                        : c.border.withValues(alpha: 0.3),
                   ),
                 );
               }).toList(),
@@ -195,7 +211,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
               decoration: BoxDecoration(
                 color: c.card,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: c.border.withValues(alpha: 0.5)),
+                border: Border.all(color: c.border.withValues(alpha: 0.3)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<EquipmentType?>(
@@ -227,29 +243,44 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
             const SizedBox(height: 28),
 
             // Save button
-            FilledButton(
-              onPressed: _saving || _nameController.text.trim().isEmpty
+            TapScale(
+              onTap: _saving || _nameController.text.trim().isEmpty
                   ? null
-                  : _save,
-              style: FilledButton.styleFrom(
-                backgroundColor: c.accent,
-                foregroundColor: c.background,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  : () => _save(),
+              child: Opacity(
+                opacity: _saving || _nameController.text.trim().isEmpty ? 0.5 : 1.0,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: c.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: c.accent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: _saving
+                      ? Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: c.accent,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Übung erstellen',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
-              child: _saving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Übung erstellen',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                    ),
             ),
           ],
         ),

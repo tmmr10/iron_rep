@@ -284,9 +284,24 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             ),
         ],
       ),
-      body: ListView(
-        padding: IronRepSpacing.screenPadding,
+      floatingActionButton: _isEditing
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 72),
+              child: FloatingActionButton(
+                onPressed: _addExercise,
+                backgroundColor: c.accent,
+                foregroundColor: Colors.black,
+                elevation: 4,
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      body: Column(
         children: [
+          Expanded(
+            child: ListView(
+              padding: IronRepSpacing.screenPadding,
+              children: [
           if (_isEditing)
             _GradientNameField(
               controller: _nameController,
@@ -349,43 +364,40 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 )),
           ],
 
-          if (_isEditing) ...[
-            const SizedBox(height: IronRepSpacing.lg),
-            OutlinedButton.icon(
-              onPressed: _addExercise,
-              icon: const Icon(Icons.add),
-              label: const Text('Übung hinzufügen'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: c.accent,
-                side: BorderSide(color: c.accent),
-              ),
-            ),
-            const SizedBox(height: IronRepSpacing.lg),
-            TapScale(
-              onTap: () => _saveEdits(),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: c.accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: c.accent.withValues(alpha: 0.3),
+          if (_isEditing)
+            const SizedBox(height: 80),
+        ],
+      ),
+          ),
+          if (_isEditing)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: TapScale(
+                  onTap: () => _saveEdits(),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      'Änderungen speichern',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  'Änderungen speichern',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: c.accent,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
               ),
             ),
-            const SizedBox(height: IronRepSpacing.lg),
-          ],
         ],
       ),
     ),
