@@ -5,17 +5,59 @@ import '../../providers/purchase_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/settings_providers.dart';
 import '../../shared/design_system.dart';
+import '../../l10n/l10n_helper.dart';
 
-class RemoveAdsScreen extends ConsumerWidget {
+class RemoveAdsScreen extends ConsumerStatefulWidget {
   const RemoveAdsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RemoveAdsScreen> createState() => _RemoveAdsScreenState();
+}
+
+class _RemoveAdsScreenState extends ConsumerState<RemoveAdsScreen> {
+  bool _isPurchasing = false;
+
+  Future<void> _onPurchased() async {
+    final db = ref.read(databaseProvider);
+    await db.settingsDao.setValue('ads_removed', 'true');
+    ref.invalidate(settingsProvider);
+    ref.invalidate(isAdsRemovedProvider);
+  }
+
+  Future<void> _buy() async {
+    final purchaseService = ref.read(purchaseServiceProvider);
+    setState(() => _isPurchasing = true);
+    purchaseService.onPurchased = _onPurchased;
+    final success = await purchaseService.buyRemoveAds();
+    if (mounted) {
+      setState(() => _isPurchasing = false);
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.purchaseFailed),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _restore() async {
+    final purchaseService = ref.read(purchaseServiceProvider);
+    setState(() => _isPurchasing = true);
+    purchaseService.onPurchased = _onPurchased;
+    await purchaseService.restorePurchases();
+    if (mounted) {
+      setState(() => _isPurchasing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final purchaseService = ref.watch(purchaseServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Remove Ads')),
+      appBar: AppBar(title: Text(context.l10n.removeAds)),
       body: SafeArea(
         child: Padding(
           padding: IronRepSpacing.screenPadding,
@@ -25,52 +67,40 @@ class RemoveAdsScreen extends ConsumerWidget {
               const Spacer(),
               Icon(Icons.block, size: 80, color: c.accent),
               const SizedBox(height: IronRepSpacing.xl),
-              Text('Remove Ads',
+              Text(context.l10n.removeAds,
                   style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: IronRepSpacing.md),
               Text(
-                'Enjoy an ad-free experience with a one-time purchase.',
+                context.l10n.adFreeDescription,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.textSecondary),
               ),
               const SizedBox(height: IronRepSpacing.xxl),
-              _FeatureRow(icon: Icons.block, text: 'No banner ads anywhere'),
+              _FeatureRow(icon: Icons.block, text: context.l10n.noAdBanners),
               const SizedBox(height: IronRepSpacing.md),
               _FeatureRow(
-                  icon: Icons.flash_on, text: 'Cleaner, faster experience'),
+                  icon: Icons.flash_on, text: context.l10n.fasterCleanerExperience),
               const SizedBox(height: IronRepSpacing.md),
               _FeatureRow(
-                  icon: Icons.favorite, text: 'Support indie development'),
+                  icon: Icons.favorite, text: context.l10n.supportIndieDev),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    purchaseService.onPurchased = () async {
-                      final db = ref.read(databaseProvider);
-                      await db.settingsDao
-                          .setValue('ads_removed', 'true');
-                      ref.invalidate(settingsProvider);
-                      ref.invalidate(isAdsRemovedProvider);
-                    };
-                    await purchaseService.buyRemoveAds();
-                  },
-                  child: const Text('Buy for €2.99'),
+                  onPressed: _isPurchasing ? null : _buy,
+                  child: _isPurchasing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(context.l10n.buyForPrice('2,99 €')),
                 ),
               ),
               const SizedBox(height: IronRepSpacing.md),
               TextButton(
-                onPressed: () async {
-                  purchaseService.onPurchased = () async {
-                    final db = ref.read(databaseProvider);
-                    await db.settingsDao
-                        .setValue('ads_removed', 'true');
-                    ref.invalidate(settingsProvider);
-                    ref.invalidate(isAdsRemovedProvider);
-                  };
-                  await purchaseService.restorePurchases();
-                },
-                child: Text('Restore Purchase',
+                onPressed: _isPurchasing ? null : _restore,
+                child: Text(context.l10n.restorePurchase,
                     style: TextStyle(color: c.textSecondary)),
               ),
               const SizedBox(height: IronRepSpacing.lg),

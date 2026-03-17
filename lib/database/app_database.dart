@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase._();
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +122,9 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               "UPDATE exercises SET name = 'Reverse Fly' WHERE name_key = 'reverse_fly'",
             );
+          }
+          if (from < 8) {
+            await m.addColumn(exercises, exercises.imagePath);
           }
           if (from < 7) {
             // Rückenstrecker: alle Gewichte löschen (hat kein Gewicht)

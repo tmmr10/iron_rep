@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/database_provider.dart';
 import '../../providers/settings_providers.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
@@ -82,8 +83,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   shaderCallback: (bounds) => LinearGradient(
                     colors: [c.accentGradientStart, c.accentGradientEnd],
                   ).createShader(bounds),
-                  child: const Text(
-                    'Willkommen bei IronRep',
+                  child: Text(
+                    context.l10n.welcomeTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
@@ -105,7 +106,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
                 // Subtitle
                 Text(
-                  'Wie heißt du?',
+                  context.l10n.whatsYourName,
                   style: TextStyle(
                     fontSize: 16,
                     color: c.textSecondary,
@@ -122,8 +123,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   autofocus: true,
                   textCapitalization: TextCapitalization.words,
                   style: TextStyle(color: c.textPrimary),
-                  decoration: const InputDecoration(
-                    hintText: 'Dein Name',
+                  decoration: InputDecoration(
+                    hintText: context.l10n.yourNameHint,
                   ),
                   onSubmitted: (_) => _submit(),
                   onChanged: (_) => setState(() {}),
@@ -150,7 +151,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                               color: c.background,
                             ),
                           )
-                        : const Text("Los geht's"),
+                        : Text(context.l10n.letsGo),
                   ),
                 )
                     .animate()
@@ -162,7 +163,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 TextButton(
                   onPressed: _skip,
                   child: Text(
-                    'Später',
+                    context.l10n.later,
                     style: TextStyle(color: c.textMuted),
                   ),
                 )

@@ -2,6 +2,8 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/enum_labels.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../models/enums.dart';
 import '../../models/exercise.dart';
 import '../../providers/database_provider.dart';
@@ -27,7 +29,6 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _instructionsController;
   late MuscleGroup _muscleGroup;
-  late ExerciseCategory _category;
   late Set<EquipmentType> _equipment;
   late bool _trackWeight;
   bool _saving = false;
@@ -37,7 +38,6 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
         (_instructionsController.text.trim()) !=
             (widget.exercise.instructions ?? '') ||
         _muscleGroup != widget.exercise.muscleGroup ||
-        _category != widget.exercise.category ||
         _trackWeight != widget.exercise.trackWeight ||
         !_setEquals(_equipment, widget.exercise.equipment.toSet());
   }
@@ -48,24 +48,25 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
 
   Future<bool> _confirmDiscard() async {
     if (!_hasChanges) return true;
+    final l = context.l10n;
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         final c = AppColors.of(ctx);
         return AlertDialog(
           backgroundColor: c.surface,
-          title: Text('Änderungen verwerfen?',
+          title: Text(l.discardChanges,
               style: TextStyle(color: c.textPrimary)),
-          content: Text('Deine Änderungen gehen verloren.',
+          content: Text(l.changesWillBeLost,
               style: TextStyle(color: c.textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Weiter bearbeiten'),
+              child: Text(l.continueEditing),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Verwerfen', style: TextStyle(color: c.error)),
+              child: Text(l.discard, style: TextStyle(color: c.error)),
             ),
           ],
         );
@@ -81,7 +82,6 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
     _instructionsController =
         TextEditingController(text: widget.exercise.instructions ?? '');
     _muscleGroup = widget.exercise.muscleGroup;
-    _category = widget.exercise.category;
     _equipment = widget.exercise.equipment.toSet();
     _trackWeight = widget.exercise.trackWeight;
   }
@@ -107,7 +107,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
         widget.exercise.id,
         name: name,
         primaryMuscleGroup: _muscleGroup.name,
-        category: _category.name,
+        category: 'compound',
         instructions:
             instructions.isEmpty ? const Value(null) : Value(instructions),
         trackWeight: _trackWeight,
@@ -127,16 +127,24 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(content: Text(context.l10n.error('$e'))),
         );
         setState(() => _saving = false);
       }
     }
   }
 
+  InputDecoration _inputDecoration(AppColors c, {required String label, String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final l = context.l10n;
 
     return PopScope(
       canPop: false,
@@ -169,7 +177,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
           children: [
             Expanded(
               child: Text(
-                'Übung bearbeiten',
+                l.editExercise,
                 style: TextStyle(
                   color: c.textPrimary,
                   fontSize: 20,
@@ -186,30 +194,29 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
         // Name
-        Text('Name der Übung',
-            style: TextStyle(color: c.textSecondary, fontSize: 13)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          decoration: BoxDecoration(
-            color: c.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.border.withValues(alpha: 0.3)),
+        TextField(
+          controller: _nameController,
+          textCapitalization: TextCapitalization.sentences,
+          style: TextStyle(color: c.textPrimary, fontSize: 16),
+          decoration: _inputDecoration(c,
+            label: l.nameInputLabel,
+            hint: l.nameInputHint,
           ),
-          child: TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.sentences,
-            style: TextStyle(color: c.textPrimary, fontSize: 15),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: 'Name eingeben',
-              hintStyle: TextStyle(color: c.textMuted),
-              contentPadding: EdgeInsets.zero,
-              isDense: true,
-            ),
+        ),
+        const SizedBox(height: 16),
+
+        // Instructions
+        TextField(
+          controller: _instructionsController,
+          textCapitalization: TextCapitalization.sentences,
+          maxLines: 3,
+          style: TextStyle(color: c.textPrimary, fontSize: 16),
+          decoration: _inputDecoration(c,
+            label: l.instructionsLabel,
+            hint: l.instructionsHint,
           ),
         ),
         const SizedBox(height: 16),
@@ -219,7 +226,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
           children: [
             Expanded(
               child: Text(
-                'Gewicht erfassen',
+                l.trackWeight,
                 style: TextStyle(color: c.textPrimary, fontSize: 15),
               ),
             ),
@@ -230,38 +237,11 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
-        // Instructions
-        Text('Anleitung (optional)',
-            style: TextStyle(color: c.textSecondary, fontSize: 13)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: c.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.border.withValues(alpha: 0.3)),
-          ),
-          child: TextField(
-            controller: _instructionsController,
-            textCapitalization: TextCapitalization.sentences,
-            maxLines: 3,
-            style: TextStyle(color: c.textPrimary, fontSize: 15),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: 'Ausführung beschreiben',
-              hintStyle: TextStyle(color: c.textMuted),
-              contentPadding: EdgeInsets.zero,
-              isDense: true,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
         // Muscle Group
-        Text('Muskelgruppe',
-            style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        Text(l.muscleGroup,
+            style: TextStyle(color: c.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -285,7 +265,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
                   ),
                 ),
                 child: Text(
-                  m.label,
+                  m.localizedLabel(context),
                   style: TextStyle(
                     color: selected ? m.color : c.textSecondary,
                     fontSize: 13,
@@ -297,37 +277,11 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
             );
           }).toList(),
         ),
-        const SizedBox(height: 20),
-
-        // Category
-        Text('Kategorie',
-            style: TextStyle(color: c.textSecondary, fontSize: 13)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: ExerciseCategory.values.map((cat) {
-            final selected = cat == _category;
-            return ChoiceChip(
-              label: Text(cat.label),
-              selected: selected,
-              onSelected: (_) => setState(() => _category = cat),
-              selectedColor: c.accent.withValues(alpha: 0.2),
-              labelStyle: TextStyle(
-                color: selected ? c.accent : c.textSecondary,
-              ),
-              side: BorderSide(
-                color: selected
-                    ? c.accent
-                    : c.border.withValues(alpha: 0.3),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
         // Equipment (Multi-Select)
-        Text('Geräte',
-            style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        Text(l.equipment,
+            style: TextStyle(color: c.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -335,7 +289,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
           children: EquipmentType.values.map((eq) {
             final selected = _equipment.contains(eq);
             return FilterChip(
-              label: Text(eq.label),
+              label: Text(eq.localizedLabel(context)),
               selected: selected,
               onSelected: (v) {
                 setState(() {
@@ -389,7 +343,7 @@ class _EditExerciseSheetState extends ConsumerState<EditExerciseSheet> {
                       ),
                     )
                   : Text(
-                      'Speichern',
+                      l.save,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.accent,

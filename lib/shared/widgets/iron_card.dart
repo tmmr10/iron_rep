@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../design_system.dart';
+import 'tap_scale.dart';
 
 class IronCard extends StatelessWidget {
   final Widget child;
@@ -67,7 +68,7 @@ class IronCard extends StatelessWidget {
     }
 
     if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: card);
+      return TapScale(onTap: onTap, child: card);
     }
     return card;
   }

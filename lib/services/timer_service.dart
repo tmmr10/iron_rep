@@ -27,8 +27,8 @@ class TimerService {
   static Future<void> scheduleTimerEnd(int seconds) async {
     await _notifications.zonedSchedule(
       0,
-      'Rest Timer',
-      'Time to get back to work!',
+      'Pausentimer',
+      'Weiter geht\'s!',
       tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds)),
       const NotificationDetails(
         iOS: DarwinNotificationDetails(
@@ -37,7 +37,7 @@ class TimerService {
         ),
         android: AndroidNotificationDetails(
           _channelId,
-          'Rest Timer',
+          'Pausentimer',
           importance: Importance.high,
           priority: Priority.high,
         ),

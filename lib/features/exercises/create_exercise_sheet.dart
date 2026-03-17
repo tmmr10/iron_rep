@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/app_database.dart';
+import '../../l10n/enum_labels.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../models/enums.dart';
 import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
@@ -19,7 +21,6 @@ class CreateExerciseSheet extends ConsumerStatefulWidget {
 class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
   final _nameController = TextEditingController();
   MuscleGroup _muscleGroup = MuscleGroup.chest;
-  ExerciseCategory _category = ExerciseCategory.compound;
   EquipmentType? _equipment;
   bool _saving = false;
 
@@ -45,7 +46,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
           name: name,
           nameKey: nameKey,
           primaryMuscleGroup: _muscleGroup.name,
-          category: _category.name,
+          category: 'compound',
           isCustom: const Value(true),
         ),
       );
@@ -65,7 +66,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(content: Text(context.l10n.error('$e'))),
         );
         setState(() => _saving = false);
       }
@@ -75,6 +76,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final l = context.l10n;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -100,7 +102,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Neue Übung erstellen',
+              l.createNewExercise,
               style: TextStyle(
                 color: c.textPrimary,
                 fontSize: 20,
@@ -110,34 +112,20 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
             const SizedBox(height: 20),
 
             // Name
-            Text('Name der Übung',
-                style: TextStyle(color: c.textSecondary, fontSize: 13)),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: c.card,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: c.border.withValues(alpha: 0.3)),
-              ),
-              child: TextField(
-                controller: _nameController,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                style: TextStyle(color: c.textPrimary, fontSize: 15),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'z.B. Kurzhantel Seitheben',
-                  hintStyle: TextStyle(color: c.textMuted),
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                ),
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              style: TextStyle(color: c.textPrimary, fontSize: 16),
+              decoration: InputDecoration(
+                labelText: l.exerciseName,
+                hintText: l.exerciseNameHint,
               ),
             ),
             const SizedBox(height: 20),
 
             // Muscle Group
-            Text('Muskelgruppe',
+            Text(l.muscleGroup,
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             const SizedBox(height: 8),
             Wrap(
@@ -162,7 +150,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                       ),
                     ),
                     child: Text(
-                      m.label,
+                      m.localizedLabel(context),
                       style: TextStyle(
                         color: selected ? m.color : c.textSecondary,
                         fontSize: 13,
@@ -176,34 +164,8 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
             ),
             const SizedBox(height: 20),
 
-            // Category
-            Text('Kategorie',
-                style: TextStyle(color: c.textSecondary, fontSize: 13)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: ExerciseCategory.values.map((cat) {
-                final selected = cat == _category;
-                return ChoiceChip(
-                  label: Text(cat.label),
-                  selected: selected,
-                  onSelected: (_) => setState(() => _category = cat),
-                  selectedColor: c.accent.withValues(alpha: 0.2),
-                  labelStyle: TextStyle(
-                    color: selected ? c.accent : c.textSecondary,
-                  ),
-                  side: BorderSide(
-                    color: selected
-                        ? c.accent
-                        : c.border.withValues(alpha: 0.3),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-
             // Gerät (optional)
-            Text('Gerät (optional)',
+            Text(l.equipmentOptional,
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             const SizedBox(height: 8),
             Container(
@@ -217,8 +179,9 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                 child: DropdownButton<EquipmentType?>(
                   value: _equipment,
                   isExpanded: true,
+                  menuMaxHeight: 300,
                   dropdownColor: c.card,
-                  hint: Text('Kein Gerät',
+                  hint: Text(l.noEquipment,
                       style: TextStyle(color: c.textMuted)),
                   icon:
                       Icon(Icons.keyboard_arrow_down, color: c.textMuted),
@@ -226,13 +189,13 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                   items: [
                     DropdownMenuItem<EquipmentType?>(
                       value: null,
-                      child: Text('Kein Gerät',
+                      child: Text(l.noEquipment,
                           style: TextStyle(color: c.textMuted)),
                     ),
                     ...EquipmentType.values.map((eq) {
                       return DropdownMenuItem<EquipmentType?>(
                         value: eq,
-                        child: Text(eq.label),
+                        child: Text(eq.localizedLabel(context)),
                       );
                     }),
                   ],
@@ -271,7 +234,7 @@ class _CreateExerciseSheetState extends ConsumerState<CreateExerciseSheet> {
                           ),
                         )
                       : Text(
-                          'Übung erstellen',
+                          l.createExercise,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: c.accent,

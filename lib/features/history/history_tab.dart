@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'manual_workout_sheet.dart';
 import 'widgets/workout_calendar.dart';
@@ -22,11 +23,11 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aktivität'),
+        title: Text(context.l10n.activity),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Training manuell eintragen',
+            tooltip: context.l10n.logManualWorkout,
             onPressed: () => _showManualWorkoutSheet(context),
           ),
         ],
@@ -34,17 +35,17 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
       body: history.when(
         data: (workouts) {
           if (workouts.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.calendar_month_rounded,
-              title: 'Noch keine Workouts',
-              subtitle: 'Schließe dein erstes Workout ab',
+              title: context.l10n.noWorkoutsYet,
+              subtitle: context.l10n.completeFirstWorkout,
             );
           }
 
           return WorkoutCalendar(workouts: workouts);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(context.l10n.error('$e'))),
       ),
     );
   }
@@ -54,6 +55,7 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
     final workoutId = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

@@ -8,6 +8,7 @@ import '../../providers/exercise_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../providers/timer_providers.dart';
 import '../../providers/database_provider.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/tap_scale.dart';
 
@@ -195,7 +196,7 @@ class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
                     children: [
                       Icon(Icons.add, size: 14, color: c.textMuted),
                       const SizedBox(width: 4),
-                      Text('Set hinzufügen',
+                      Text(context.l10n.addSet,
                           style: TextStyle(
                             color: c.textMuted,
                             fontSize: 13,
@@ -210,7 +211,7 @@ class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
         );
       },
       loading: () => const SizedBox(height: 40),
-      error: (e, _) => Text('Error: $e'),
+      error: (e, _) => Text(context.l10n.error(e.toString())),
     );
   }
 }

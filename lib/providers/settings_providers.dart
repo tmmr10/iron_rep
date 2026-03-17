@@ -10,6 +10,7 @@ class AppSettings {
   final bool adsRemoved;
   final ThemeMode themeMode;
   final String? userName;
+  final String? localeOverride; // null = system, 'de', 'en'
 
   const AppSettings({
     this.weightUnit = WeightUnit.kg,
@@ -17,6 +18,7 @@ class AppSettings {
     this.adsRemoved = false,
     this.themeMode = ThemeMode.dark,
     this.userName,
+    this.localeOverride,
   });
 }
 
@@ -29,6 +31,7 @@ final settingsProvider = FutureProvider<AppSettings>((ref) async {
   final ads = await dao.getValue('ads_removed');
   final theme = await dao.getValue('theme_mode');
   final name = await dao.getValue('user_name');
+  final locale = await dao.getValue('locale');
 
   return AppSettings(
     weightUnit: unit == 'lbs' ? WeightUnit.lbs : WeightUnit.kg,
@@ -36,6 +39,7 @@ final settingsProvider = FutureProvider<AppSettings>((ref) async {
     adsRemoved: ads == 'true',
     themeMode: _parseThemeMode(theme),
     userName: (name != null && name.isNotEmpty) ? name : null,
+    localeOverride: (locale != null && locale.isNotEmpty) ? locale : null,
   );
 });
 
@@ -53,6 +57,13 @@ ThemeMode _parseThemeMode(String? value) {
 final weightUnitProvider = FutureProvider<WeightUnit>((ref) async {
   final settings = await ref.watch(settingsProvider.future);
   return settings.weightUnit;
+});
+
+final localeProvider = Provider<Locale?>((ref) {
+  final settings = ref.watch(settingsProvider);
+  final override = settings.valueOrNull?.localeOverride;
+  if (override == null) return null; // system default
+  return Locale(override);
 });
 
 final themeModeProvider = Provider<ThemeMode>((ref) {

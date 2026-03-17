@@ -40,7 +40,7 @@ class RestTimerOverlay extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Rest Timer',
+                Text('Pausentimer',
                     style: TextStyle(
                       color: c.textSecondary,
                       fontSize: 12,

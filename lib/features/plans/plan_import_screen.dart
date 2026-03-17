@@ -7,6 +7,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/plan_providers.dart';
 import '../../services/plan_sharing_service.dart';
 import '../../shared/design_system.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/widgets/tap_scale.dart';
 
 class PlanImportScreen extends ConsumerStatefulWidget {
@@ -52,7 +53,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Plan importieren'),
+        title: Text(context.l10n.importPlan),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),
@@ -83,7 +84,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                       ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.1),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.plan.exercises.length} Übungen · ${widget.plan.exercises.fold<int>(0, (s, e) => s + e.targetSets)} Sets',
+                        context.l10n.exercisesCount(widget.plan.exercises.length, widget.plan.exercises.fold<int>(0, (s, e) => s + e.targetSets)),
                         style: TextStyle(
                           color: c.textSecondary,
                           fontSize: 14,
@@ -107,7 +108,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  '$unknownCount Übung${unknownCount > 1 ? 'en' : ''} nicht erkannt — wird beim Import übersprungen',
+                                  '$unknownCount ${context.l10n.exercisesNotRecognized}',
                                   style: TextStyle(
                                     color: c.warning,
                                     fontSize: 13,
@@ -180,7 +181,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                     ),
                                     if (isCustom)
                                       Text(
-                                        'Wird als Custom-Übung angelegt',
+                                        context.l10n.customExerciseCreated,
                                         style: TextStyle(
                                           color: c.textMuted,
                                           fontSize: 12,
@@ -188,7 +189,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                       ),
                                     if (isUnknown)
                                       Text(
-                                        'Übung nicht gefunden',
+                                        context.l10n.exerciseNotFound,
                                         style: TextStyle(
                                           color: c.error.withValues(alpha: 0.7),
                                           fontSize: 12,
@@ -198,7 +199,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                 ),
                               ),
                               Text(
-                                '${m.source.targetSets} Sets',
+                                '${m.source.targetSets} ${context.l10n.sets}',
                                 style: TextStyle(
                                   color: c.textSecondary,
                                   fontWeight: FontWeight.w600,
@@ -218,7 +219,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                 // Import button
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     child: TapScale(
                       onTap: _isImporting ? null : _import,
                       child: Opacity(
@@ -251,7 +252,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                         color: c.accent, size: 20),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Plan importieren',
+                                      context.l10n.importPlan,
                                       style: TextStyle(
                                         color: c.accent,
                                         fontWeight: FontWeight.w600,

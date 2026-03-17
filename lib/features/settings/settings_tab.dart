@@ -7,6 +7,8 @@ import '../../providers/database_provider.dart';
 import '../../providers/plan_providers.dart';
 import '../../models/enums.dart';
 import '../../shared/design_system.dart';
+import '../../shared/widgets/section_header.dart';
+import '../../l10n/l10n_helper.dart';
 
 class SettingsTab extends ConsumerWidget {
   const SettingsTab({super.key});
@@ -17,17 +19,17 @@ class SettingsTab extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Einstellungen')),
+      appBar: AppBar(title: Text(context.l10n.navMore)),
       body: settingsAsync.when(
         data: (settings) => ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
           children: [
-            _SectionHeader('Einstellungen'),
+            SectionHeader(title: context.l10n.settings),
             _SettingsTile(
               icon: Icons.person_outline,
-              title: 'Name',
+              title: context.l10n.name,
               trailing: Text(
-                settings.userName ?? 'Nicht gesetzt',
+                settings.userName ?? context.l10n.notSet,
                 style: TextStyle(
                   color: settings.userName != null ? c.accent : c.textMuted,
                 ),
@@ -36,7 +38,7 @@ class SettingsTab extends ConsumerWidget {
             ),
             _SettingsTile(
               icon: Icons.straighten,
-              title: 'Gewichtseinheit',
+              title: context.l10n.weightUnit,
               trailing: Text(
                 settings.weightUnit.label,
                 style: TextStyle(color: c.accent),
@@ -45,7 +47,7 @@ class SettingsTab extends ConsumerWidget {
             ),
             _SettingsTile(
               icon: Icons.timer,
-              title: 'Standard-Pausenzeit',
+              title: context.l10n.defaultRestTime,
               trailing: Text(
                 '${settings.defaultRestSeconds}s',
                 style: TextStyle(color: c.accent),
@@ -54,37 +56,46 @@ class SettingsTab extends ConsumerWidget {
                   _showRestTimePicker(context, ref, settings.defaultRestSeconds),
             ),
             const SizedBox(height: IronRepSpacing.xl),
-            _SectionHeader('Darstellung'),
+            SectionHeader(title: context.l10n.appearance),
             _SettingsTile(
               icon: Icons.palette_outlined,
-              title: 'Design',
+              title: context.l10n.design,
               trailing: Text(
-                _themeModeLabel(settings.themeMode),
+                _themeModeLabel(context, settings.themeMode),
                 style: TextStyle(color: c.accent),
               ),
               onTap: () => _showThemePicker(context, ref, settings.themeMode),
             ),
+            _SettingsTile(
+              icon: Icons.language,
+              title: context.l10n.language,
+              trailing: Text(
+                _localeLabel(context, settings.localeOverride),
+                style: TextStyle(color: c.accent),
+              ),
+              onTap: () => _showLocalePicker(context, ref, settings.localeOverride),
+            ),
             const SizedBox(height: IronRepSpacing.xl),
-            _SectionHeader('Pläne & Übungen'),
+            SectionHeader(title: context.l10n.plansAndExercises),
             _SettingsTile(
               icon: Icons.list_alt,
-              title: 'Pläne verwalten',
+              title: context.l10n.managePlans,
               trailing: Icon(Icons.chevron_right,
                   color: c.textMuted, size: 20),
               onTap: () => _showManagePlans(context, ref),
             ),
             _SettingsTile(
               icon: Icons.fitness_center,
-              title: 'Übungen verwalten',
+              title: context.l10n.manageExercises,
               trailing: Icon(Icons.chevron_right,
                   color: c.textMuted, size: 20),
               onTap: () => context.push('/exercises'),
             ),
             const SizedBox(height: IronRepSpacing.xl),
-            _SectionHeader('Pro'),
+            SectionHeader(title: context.l10n.pro),
             _SettingsTile(
               icon: Icons.block,
-              title: 'Werbung entfernen',
+              title: context.l10n.removeAds,
               trailing: settings.adsRemoved
                   ? Icon(Icons.check, color: c.success)
                   : Text('€2.99',
@@ -94,45 +105,64 @@ class SettingsTab extends ConsumerWidget {
                   : () => context.push('/remove-ads'),
             ),
             const SizedBox(height: IronRepSpacing.xl),
-            _SectionHeader('Über'),
+            SectionHeader(title: context.l10n.about),
             _SettingsTile(
               icon: Icons.info_outline,
-              title: 'Version',
+              title: context.l10n.version,
               trailing: Text('1.0.0',
                   style: TextStyle(color: c.textSecondary)),
+            ),
+            _SettingsTile(
+              icon: Icons.code,
+              title: context.l10n.openSourceLicenses,
+              trailing: Icon(Icons.chevron_right,
+                  color: c.textMuted, size: 20),
+              onTap: () => context.push('/licenses'),
             ),
           ],
         ),
         loading: () =>
             const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(context.l10n.error('$e'))),
       ),
     );
   }
 
-  String _themeModeLabel(ThemeMode mode) {
+  String _themeModeLabel(BuildContext context, ThemeMode mode) {
     switch (mode) {
       case ThemeMode.dark:
-        return 'Dunkel';
+        return context.l10n.dark;
       case ThemeMode.light:
-        return 'Hell';
+        return context.l10n.light;
       case ThemeMode.system:
-        return 'System';
+        return context.l10n.system;
     }
   }
 
-  void _showThemePicker(
-      BuildContext context, WidgetRef ref, ThemeMode current) {
+  String _localeLabel(BuildContext context, String? localeOverride) {
+    switch (localeOverride) {
+      case 'de':
+        return context.l10n.languageGerman;
+      case 'en':
+        return context.l10n.languageEnglish;
+      default:
+        return context.l10n.languageSystem;
+    }
+  }
+
+  void _showLocalePicker(
+      BuildContext context, WidgetRef ref, String? current) {
     final c = AppColors.of(context);
     final options = [
-      (ThemeMode.dark, 'Dunkel', 'dark'),
-      (ThemeMode.light, 'Hell', 'light'),
-      (ThemeMode.system, 'System', 'system'),
+      (null, context.l10n.languageSystem, ''),
+      ('de', context.l10n.languageGerman, 'de'),
+      ('en', context.l10n.languageEnglish, 'en'),
     ];
     showModalBottomSheet(
       context: context,
-      backgroundColor: c.card,
-      builder: (_) => SafeArea(
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: options.map((opt) {
@@ -143,10 +173,47 @@ class SettingsTab extends ConsumerWidget {
                   ? Icon(Icons.check, color: c.accent)
                   : null,
               onTap: () async {
+                Navigator.of(sheetContext, rootNavigator: true).pop();
+                await Future.delayed(const Duration(milliseconds: 300));
+                final db = ref.read(databaseProvider);
+                await db.settingsDao.setValue('locale', opt.$3);
+                ref.invalidate(settingsProvider);
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _showThemePicker(
+      BuildContext context, WidgetRef ref, ThemeMode current) {
+    final c = AppColors.of(context);
+    final options = [
+      (ThemeMode.dark, context.l10n.dark, 'dark'),
+      (ThemeMode.light, context.l10n.light, 'light'),
+      (ThemeMode.system, context.l10n.system, 'system'),
+    ];
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((opt) {
+            return ListTile(
+              title: Text(opt.$2,
+                  style: TextStyle(color: c.textPrimary)),
+              trailing: opt.$1 == current
+                  ? Icon(Icons.check, color: c.accent)
+                  : null,
+              onTap: () async {
+                Navigator.of(sheetContext, rootNavigator: true).pop();
+                await Future.delayed(const Duration(milliseconds: 300));
                 final db = ref.read(databaseProvider);
                 await db.settingsDao.setValue('theme_mode', opt.$3);
                 ref.invalidate(settingsProvider);
-                if (context.mounted) Navigator.pop(context);
               },
             );
           }).toList(),
@@ -160,8 +227,9 @@ class SettingsTab extends ConsumerWidget {
     final c = AppColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: c.card,
-      builder: (_) => SafeArea(
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: WeightUnit.values.map((u) {
@@ -172,10 +240,11 @@ class SettingsTab extends ConsumerWidget {
                   ? Icon(Icons.check, color: c.accent)
                   : null,
               onTap: () async {
+                Navigator.of(sheetContext, rootNavigator: true).pop();
+                await Future.delayed(const Duration(milliseconds: 300));
                 final db = ref.read(databaseProvider);
                 await db.settingsDao.setValue('weight_unit', u.name);
                 ref.invalidate(settingsProvider);
-                if (context.mounted) Navigator.pop(context);
               },
             );
           }).toList(),
@@ -187,16 +256,18 @@ class SettingsTab extends ConsumerWidget {
   void _showManagePlans(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
     final plans = ref.read(allPlansProvider);
+    final router = GoRouter.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: c.card,
-      builder: (_) => SafeArea(
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Pläne verwalten',
+              child: Text(context.l10n.managePlans,
                   style: TextStyle(
                     color: c.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -209,18 +280,18 @@ class SettingsTab extends ConsumerWidget {
                       trailing: Icon(Icons.edit_outlined,
                           color: c.textMuted, size: 20),
                       onTap: () {
-                        Navigator.pop(context);
-                        context.push('/plan-editor', extra: plan.id);
+                        Navigator.pop(sheetContext);
+                        router.push('/plan-editor', extra: plan.id);
                       },
                     )) ??
                 [],
             ListTile(
               leading: Icon(Icons.add, color: c.accent),
-              title: Text('Neuen Plan erstellen',
+              title: Text(context.l10n.createNewPlan,
                   style: TextStyle(color: c.accent)),
               onTap: () {
-                Navigator.pop(context);
-                context.push('/plan-editor');
+                Navigator.pop(sheetContext);
+                router.push('/plan-editor');
               },
             ),
           ],
@@ -235,20 +306,21 @@ class SettingsTab extends ConsumerWidget {
     final controller = TextEditingController(text: currentName ?? '');
     showModalBottomSheet(
       context: context,
-      backgroundColor: c.card,
+      useRootNavigator: true,
+      backgroundColor: c.surface,
       isScrollControlled: true,
-      builder: (_) => Padding(
+      builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
           top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Name',
+            Text(context.l10n.name,
                 style: TextStyle(
                   color: c.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -258,18 +330,10 @@ class SettingsTab extends ConsumerWidget {
             TextField(
               controller: controller,
               autofocus: true,
-              style: TextStyle(color: c.textPrimary),
+              style: TextStyle(color: c.textPrimary, fontSize: 16),
               decoration: InputDecoration(
-                hintText: 'Dein Name',
-                hintStyle: TextStyle(color: c.textMuted),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: c.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: c.accent),
-                ),
+                labelText: context.l10n.name,
+                hintText: context.l10n.yourNameHint,
               ),
               onSubmitted: (value) async {
                 final trimmed = value.trim();
@@ -277,7 +341,7 @@ class SettingsTab extends ConsumerWidget {
                 await db.settingsDao.setValue(
                     'user_name', trimmed.isEmpty ? '' : trimmed);
                 ref.invalidate(settingsProvider);
-                if (context.mounted) Navigator.pop(context);
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
               },
             ),
             const SizedBox(height: 12),
@@ -288,9 +352,9 @@ class SettingsTab extends ConsumerWidget {
                 await db.settingsDao.setValue(
                     'user_name', trimmed.isEmpty ? '' : trimmed);
                 ref.invalidate(settingsProvider);
-                if (context.mounted) Navigator.pop(context);
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
               },
-              child: Text('Speichern',
+              child: Text(context.l10n.save,
                   style: TextStyle(color: c.accent, fontWeight: FontWeight.w600)),
             ),
           ],
@@ -305,8 +369,9 @@ class SettingsTab extends ConsumerWidget {
     final options = [30, 60, 90, 120, 180];
     showModalBottomSheet(
       context: context,
-      backgroundColor: c.card,
-      builder: (_) => SafeArea(
+      useRootNavigator: true,
+      backgroundColor: c.surface,
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: options.map((secs) {
@@ -317,36 +382,15 @@ class SettingsTab extends ConsumerWidget {
                   ? Icon(Icons.check, color: c.accent)
                   : null,
               onTap: () async {
+                Navigator.of(sheetContext, rootNavigator: true).pop();
+                await Future.delayed(const Duration(milliseconds: 300));
                 final db = ref.read(databaseProvider);
                 await db.settingsDao
                     .setValue('default_rest_seconds', '$secs');
                 ref.invalidate(settingsProvider);
-                if (context.mounted) Navigator.pop(context);
               },
             );
           }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: c.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
         ),
       ),
     );

@@ -11,6 +11,7 @@ import '../../providers/workout_providers.dart';
 import '../../services/plan_sharing_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/tap_scale.dart';
+import '../../l10n/l10n_helper.dart';
 import 'exercise_picker_sheet.dart';
 
 class _PlanExerciseEntry {
@@ -23,7 +24,7 @@ class _PlanExerciseEntry {
     required this.exerciseId,
     required this.name,
     this.muscleGroup,
-    this.targetSets = 3,
+    this.targetSets = 1,
   });
 }
 
@@ -63,18 +64,18 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Änderungen verwerfen?',
+        title: Text(context.l10n.discardChanges,
             style: TextStyle(color: c.textPrimary)),
-        content: Text('Deine Änderungen gehen verloren.',
+        content: Text(context.l10n.changesWillBeLost,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Weiter bearbeiten'),
+            child: Text(context.l10n.continueEditing),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Verwerfen', style: TextStyle(color: c.error)),
+            child: Text(context.l10n.discard, style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -141,8 +142,27 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       child: Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
-        title: Text(isEditing ? 'Plan bearbeiten' : 'Neuer Plan'),
+        title: const SizedBox.shrink(),
         actions: [
+          TextButton(
+            onPressed: _isSaving ? null : _savePlan,
+            child: _isSaving
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: c.accent,
+                    ),
+                  )
+                : Text(
+                    context.l10n.save,
+                    style: TextStyle(
+                      color: c.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
           if (isEditing)
             IconButton(
               icon: Icon(Icons.more_horiz, color: c.textSecondary),
@@ -153,7 +173,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       floatingActionButton: _isLoading
           ? null
           : Padding(
-              padding: const EdgeInsets.only(bottom: 72),
+              padding: const EdgeInsets.only(bottom: 16),
               child: FloatingActionButton(
                 onPressed: _addExercise,
                 backgroundColor: c.accent,
@@ -180,7 +200,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                       Row(
                         children: [
                           Text(
-                            'ÜBUNGEN',
+                            context.l10n.exercisesSectionHeader,
                             style: TextStyle(
                               color: c.textMuted,
                               fontSize: 12,
@@ -190,7 +210,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                           ),
                           const Spacer(),
                           Text(
-                            '${_exercises.length} Übungen · ${_exercises.fold<int>(0, (s, e) => s + e.targetSets)} Sets',
+                            context.l10n.exercisesCount(_exercises.length, _exercises.fold<int>(0, (s, e) => s + e.targetSets)),
                             style: TextStyle(
                               color: c.textSecondary,
                               fontSize: 12,
@@ -199,6 +219,27 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      // Empty state
+                      if (_exercises.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 48),
+                          child: Column(
+                            children: [
+                              Icon(Icons.fitness_center,
+                                  color: c.textMuted.withValues(alpha: 0.3),
+                                  size: 48),
+                              const SizedBox(height: 12),
+                              Text(
+                                context.l10n.addExerciseEmptyState,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: c.textMuted,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       // Exercise list
                       ReorderableListView.builder(
                         shrinkWrap: true,
@@ -245,51 +286,6 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                     ],
                   ),
                 ),
-                // Save button
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                    child: TapScale(
-                      onTap: _isSaving ? null : _savePlan,
-                      child: Opacity(
-                        opacity: _isSaving ? 0.5 : 1.0,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: c.accent.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: c.accent.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: _isSaving
-                              ? Center(
-                                  child: SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: c.accent,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  isEditing
-                                      ? 'Änderungen speichern'
-                                      : 'Plan erstellen',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: c.accent,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
     ),
@@ -310,7 +306,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.95,
         maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
@@ -357,7 +353,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.95,
         maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
@@ -391,13 +387,13 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte einen Plannamen eingeben')),
+        SnackBar(content: Text(context.l10n.enterPlanName)),
       );
       return;
     }
     if (_exercises.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mindestens eine Übung hinzufügen')),
+        SnackBar(content: Text(context.l10n.addAtLeastOneExercise)),
       );
       return;
     }
@@ -476,7 +472,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                       ),
                     ),
                     child: Text(
-                      'Plan teilen',
+                      context.l10n.sharePlan,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.accent,
@@ -503,7 +499,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                       ),
                     ),
                     child: Text(
-                      'Plan löschen',
+                      context.l10n.deletePlan,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.error,
@@ -536,7 +532,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         isCustom: exercise.isCustom,
         customName: exercise.isCustom ? exercise.name : null,
         muscleGroup: exercise.isCustom ? exercise.primaryMuscleGroup : null,
-        category: exercise.isCustom ? exercise.category : null,
+        category: exercise.isCustom ? 'compound' : null,
       );
     }).toList();
 
@@ -549,13 +545,13 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     final exerciseLines = _exercises.asMap().entries.map((entry) {
       final i = entry.key + 1;
       final ex = entry.value;
-      return '$i. ${ex.name} — ${ex.targetSets} Sets';
+      return '$i. ${ex.name} — ${ex.targetSets} ${context.l10n.sets}';
     }).join('\n');
     final url = PlanSharingService.buildShareUrl(encoded);
     final message = '💪 $planName\n'
-        '${_exercises.length} Übungen · $totalSets Sets\n\n'
+        '${context.l10n.exercisesCount(_exercises.length, totalSets)}\n\n'
         '$exerciseLines\n\n'
-        'Plan in IronRep importieren:\n$url';
+        '${context.l10n.importPlanShareMessage(url)}';
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(
       message,
@@ -571,18 +567,18 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Plan löschen?',
+        title: Text(context.l10n.deletePlanConfirm,
             style: TextStyle(color: c.textPrimary)),
-        content: Text('Das kann nicht rückgängig gemacht werden.',
+        content: Text(context.l10n.cannotBeUndone,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Löschen', style: TextStyle(color: c.error)),
+            child: Text(context.l10n.delete, style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -672,9 +668,8 @@ class _ExerciseRow extends StatelessWidget {
             ),
             // Muscle group dot + exercise name (tappable to replace)
             Expanded(
-              child: GestureDetector(
+              child: TapScale(
                 onTap: onReplace,
-                behavior: HitTestBehavior.opaque,
                 child: Row(
                   children: [
                     Container(
@@ -702,51 +697,61 @@ class _ExerciseRow extends StatelessWidget {
             ),
             // Pill-style set counter
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
               decoration: BoxDecoration(
                 color: c.elevated,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (entry.targetSets > 1) {
-                        onTargetSetsChanged(entry.targetSets - 1);
-                      }
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                  TapScale(
+                    onTap: entry.targetSets > 1
+                        ? () => onTargetSetsChanged(entry.targetSets - 1)
+                        : null,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: entry.targetSets > 1
+                            ? c.card
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
                       child: Icon(
-                        Icons.chevron_left,
+                        Icons.remove,
                         color: entry.targetSets > 1
                             ? c.textSecondary
                             : c.border,
-                        size: 18,
+                        size: 20,
                       ),
                     ),
                   ),
                   SizedBox(
-                    width: 24,
+                    width: 32,
                     child: Text(
                       '${entry.targetSets}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.accent,
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: 16,
                       ),
                     ),
                   ),
-                  GestureDetector(
+                  TapScale(
                     onTap: () => onTargetSetsChanged(entry.targetSets + 1),
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.chevron_right,
-                          color: c.textSecondary, size: 18),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: c.card,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.add,
+                          color: c.textSecondary, size: 20),
                     ),
                   ),
                 ],
@@ -797,7 +802,7 @@ class _GradientNameFieldState extends State<_GradientNameField> {
                 letterSpacing: -0.5,
               ),
               decoration: InputDecoration(
-                hintText: 'Planname',
+                hintText: context.l10n.planName,
                 hintStyle: TextStyle(
                   color: c.textMuted.withValues(alpha: 0.4),
                   fontSize: 28,

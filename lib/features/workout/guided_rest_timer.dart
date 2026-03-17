@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/timer_providers.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
 
 class GuidedRestTimer extends ConsumerWidget {
@@ -55,7 +56,7 @@ class GuidedRestTimer extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Pause',
+                    context.l10n.restPause,
                     style: TextStyle(color: c.textSecondary, fontSize: 14),
                   ),
                 ],
@@ -88,14 +89,14 @@ class GuidedRestTimer extends ConsumerWidget {
             ref.read(restTimerProvider.notifier).skip();
           },
           icon: Icon(Icons.skip_next, color: c.accent),
-          label: Text('Überspringen',
+          label: Text(context.l10n.skip,
               style: TextStyle(color: c.accent, fontSize: 16)),
         ),
         // Next set or next exercise preview
         if (nextSetInfo != null) ...[
           const SizedBox(height: 20),
           Text(
-            'Nächster Satz',
+            context.l10n.nextSet,
             style: TextStyle(color: c.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 4),
@@ -110,7 +111,7 @@ class GuidedRestTimer extends ConsumerWidget {
         ] else if (nextExerciseName != null) ...[
           const SizedBox(height: 20),
           Text(
-            'Nächste Übung',
+            context.l10n.nextExercise,
             style: TextStyle(color: c.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 4),

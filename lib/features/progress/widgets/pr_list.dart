@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n_helper.dart';
 import '../../../providers/stats_providers.dart';
 import '../../../providers/exercise_providers.dart';
 import '../../../shared/design_system.dart';
@@ -19,7 +20,7 @@ class PrList extends ConsumerWidget {
         if (records.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Noch keine persönlichen Rekorde',
+            child: Text(context.l10n.noPRsYet,
                 style: TextStyle(color: c.textMuted)),
           );
         }
@@ -40,7 +41,7 @@ class PrList extends ConsumerWidget {
               leading: Icon(Icons.emoji_events,
                   color: c.warning, size: 20),
               title: Text(
-                exerciseNames[r.exerciseId] ?? 'Exercise #${r.exerciseId}',
+                exerciseNames[r.exerciseId] ?? context.l10n.exerciseNumber(r.exerciseId),
                 style: TextStyle(color: c.textPrimary),
               ),
               subtitle: Text(
@@ -60,7 +61,7 @@ class PrList extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox(height: 100),
-      error: (e, _) => Text('Error: $e'),
+      error: (e, _) => Text(context.l10n.error('$e')),
     );
   }
 }

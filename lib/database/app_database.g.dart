@@ -107,6 +107,17 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -144,6 +155,7 @@ class $ExercisesTable extends Exercises
     category,
     trackWeight,
     isCustom,
+    imagePath,
     isActive,
     createdAt,
   ];
@@ -221,6 +233,12 @@ class $ExercisesTable extends Exercises
         isCustom.isAcceptableOrUnknown(data['is_custom']!, _isCustomMeta),
       );
     }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -274,6 +292,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_custom'],
       )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      ),
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -300,6 +322,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String category;
   final bool trackWeight;
   final bool isCustom;
+  final String? imagePath;
   final bool isActive;
   final DateTime createdAt;
   const Exercise({
@@ -311,6 +334,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.category,
     required this.trackWeight,
     required this.isCustom,
+    this.imagePath,
     required this.isActive,
     required this.createdAt,
   });
@@ -327,6 +351,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['category'] = Variable<String>(category);
     map['track_weight'] = Variable<bool>(trackWeight);
     map['is_custom'] = Variable<bool>(isCustom);
+    if (!nullToAbsent || imagePath != null) {
+      map['image_path'] = Variable<String>(imagePath);
+    }
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -344,6 +371,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       category: Value(category),
       trackWeight: Value(trackWeight),
       isCustom: Value(isCustom),
+      imagePath: imagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePath),
       isActive: Value(isActive),
       createdAt: Value(createdAt),
     );
@@ -365,6 +395,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       category: serializer.fromJson<String>(json['category']),
       trackWeight: serializer.fromJson<bool>(json['trackWeight']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
+      imagePath: serializer.fromJson<String?>(json['imagePath']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -381,6 +412,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'category': serializer.toJson<String>(category),
       'trackWeight': serializer.toJson<bool>(trackWeight),
       'isCustom': serializer.toJson<bool>(isCustom),
+      'imagePath': serializer.toJson<String?>(imagePath),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -395,6 +427,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     String? category,
     bool? trackWeight,
     bool? isCustom,
+    Value<String?> imagePath = const Value.absent(),
     bool? isActive,
     DateTime? createdAt,
   }) => Exercise(
@@ -406,6 +439,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     category: category ?? this.category,
     trackWeight: trackWeight ?? this.trackWeight,
     isCustom: isCustom ?? this.isCustom,
+    imagePath: imagePath.present ? imagePath.value : this.imagePath,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -425,6 +459,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? data.trackWeight.value
           : this.trackWeight,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -441,6 +476,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('category: $category, ')
           ..write('trackWeight: $trackWeight, ')
           ..write('isCustom: $isCustom, ')
+          ..write('imagePath: $imagePath, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -457,6 +493,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     category,
     trackWeight,
     isCustom,
+    imagePath,
     isActive,
     createdAt,
   );
@@ -472,6 +509,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.category == this.category &&
           other.trackWeight == this.trackWeight &&
           other.isCustom == this.isCustom &&
+          other.imagePath == this.imagePath &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
 }
@@ -485,6 +523,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String> category;
   final Value<bool> trackWeight;
   final Value<bool> isCustom;
+  final Value<String?> imagePath;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const ExercisesCompanion({
@@ -496,6 +535,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.category = const Value.absent(),
     this.trackWeight = const Value.absent(),
     this.isCustom = const Value.absent(),
+    this.imagePath = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -508,6 +548,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     required String category,
     this.trackWeight = const Value.absent(),
     this.isCustom = const Value.absent(),
+    this.imagePath = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name),
@@ -523,6 +564,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? category,
     Expression<bool>? trackWeight,
     Expression<bool>? isCustom,
+    Expression<String>? imagePath,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
   }) {
@@ -536,6 +578,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (category != null) 'category': category,
       if (trackWeight != null) 'track_weight': trackWeight,
       if (isCustom != null) 'is_custom': isCustom,
+      if (imagePath != null) 'image_path': imagePath,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -550,6 +593,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String>? category,
     Value<bool>? trackWeight,
     Value<bool>? isCustom,
+    Value<String?>? imagePath,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
   }) {
@@ -562,6 +606,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       category: category ?? this.category,
       trackWeight: trackWeight ?? this.trackWeight,
       isCustom: isCustom ?? this.isCustom,
+      imagePath: imagePath ?? this.imagePath,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -594,6 +639,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -614,6 +662,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('category: $category, ')
           ..write('trackWeight: $trackWeight, ')
           ..write('isCustom: $isCustom, ')
+          ..write('imagePath: $imagePath, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -3765,6 +3814,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       required String category,
       Value<bool> trackWeight,
       Value<bool> isCustom,
+      Value<String?> imagePath,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -3778,6 +3828,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String> category,
       Value<bool> trackWeight,
       Value<bool> isCustom,
+      Value<String?> imagePath,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -3927,6 +3978,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isCustom => $composableBuilder(
     column: $table.isCustom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4090,6 +4146,11 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
@@ -4139,6 +4200,9 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get isCustom =>
       $composableBuilder(column: $table.isCustom, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
@@ -4289,6 +4353,7 @@ class $$ExercisesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<bool> trackWeight = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
+                Value<String?> imagePath = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ExercisesCompanion(
@@ -4300,6 +4365,7 @@ class $$ExercisesTableTableManager
                 category: category,
                 trackWeight: trackWeight,
                 isCustom: isCustom,
+                imagePath: imagePath,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -4313,6 +4379,7 @@ class $$ExercisesTableTableManager
                 required String category,
                 Value<bool> trackWeight = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
+                Value<String?> imagePath = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ExercisesCompanion.insert(
@@ -4324,6 +4391,7 @@ class $$ExercisesTableTableManager
                 category: category,
                 trackWeight: trackWeight,
                 isCustom: isCustom,
+                imagePath: imagePath,
                 isActive: isActive,
                 createdAt: createdAt,
               ),

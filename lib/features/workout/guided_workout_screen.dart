@@ -6,12 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../../database/app_database.dart';
 import '../../models/enums.dart';
 import '../../providers/exercise_providers.dart';
+import '../../providers/plan_providers.dart';
 import '../../providers/timer_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/tap_scale.dart';
 import '../../shared/widgets/weight_slider.dart';
 import '../../shared/widgets/reps_stepper.dart';
+import '../../l10n/l10n_helper.dart';
 import 'active_workout_screen.dart';
 import 'guided_rest_timer.dart';
 import 'set_logger_card.dart';
@@ -167,7 +169,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               final nextSetIdx = sets.indexWhere(
                   (s) => !s.isCompleted, _currentSetIndex + 1);
               final String? nextSetInfo = nextSetIdx != -1
-                  ? 'Satz ${nextSetIdx + 1} von ${sets.length}'
+                  ? context.l10n.setOfTotal(nextSetIdx + 1, sets.length)
                   : null;
 
               return Column(
@@ -202,13 +204,24 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Übung ${_currentExerciseIndex + 1} von ${exercises.length}',
+                  context.l10n.exerciseOf(_currentExerciseIndex + 1, exercises.length),
                   style: TextStyle(
                     color: c.textSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (nextExerciseName != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      context.l10n.nextExerciseLabel(nextExerciseName!),
+                      style: TextStyle(
+                        color: c.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 // Carousel for unified card
                 Expanded(
@@ -265,12 +278,12 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                                       children: [
                                         Text(
                                           sets.isNotEmpty
-                                              ? 'Satz ${_currentSetIndex + 1} von ${sets.length}'
-                                              : 'Satz 1 von …',
+                                              ? context.l10n.setOfTotal(_currentSetIndex + 1, sets.length)
+                                              : context.l10n.setOfTotalLoading,
                                           style: TextStyle(
-                                            color: muscleColor,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            color: c.textMuted,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                         if (weightDiff != null)
@@ -379,8 +392,8 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   currentSet?.isCompleted ?? false
-                                      ? 'Satz abgeschlossen'
-                                      : 'Satz abschließen',
+                                      ? context.l10n.setCompleted
+                                      : context.l10n.completeSet,
                                   style: const TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w600,
@@ -397,7 +410,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                             .read(isGuidedModeProvider.notifier)
                             .state = false,
                         child: Text(
-                          'Alle Übungen anzeigen',
+                          context.l10n.showAllExercises,
                           style: TextStyle(
                             color: c.textMuted,
                             fontSize: 14,
@@ -412,7 +425,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
           },
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Fehler: $e')),
+          error: (e, _) => Center(child: Text(context.l10n.error(e.toString()))),
         ),
       ),
     );
@@ -468,7 +481,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                 const SizedBox(height: 2),
                 Text(
                   isPaused
-                      ? 'Pausiert · ${m}m ${s.toString().padLeft(2, '0')}s'
+                      ? context.l10n.pausedTime('${m}m ${s.toString().padLeft(2, '0')}s')
                       : '${m}m ${s.toString().padLeft(2, '0')}s',
                   style: TextStyle(
                     color: isPaused ? c.warning : c.textMuted,
@@ -561,7 +574,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                       ),
                     ),
                     child: Text(
-                      'Workout beenden',
+                      context.l10n.endWorkout,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.accent,
@@ -588,7 +601,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                       ),
                     ),
                     child: Text(
-                      'Workout verwerfen',
+                      context.l10n.discardWorkout,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.error,
@@ -611,14 +624,14 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Workout verwerfen?',
+        title: Text(context.l10n.discardWorkoutConfirm,
             style: TextStyle(color: c.textPrimary)),
-        content: Text('Alle Fortschritte gehen verloren.',
+        content: Text(context.l10n.allProgressWillBeLost,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Weitermachen'),
+            child: Text(context.l10n.continueTraining),
           ),
           TextButton(
             onPressed: () async {
@@ -630,7 +643,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                 context.go('/workout');
               }
             },
-            child: Text('Verwerfen', style: TextStyle(color: c.error)),
+            child: Text(context.l10n.discard, style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -703,15 +716,15 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Alle Übungen abgeschlossen!',
+        title: Text(context.l10n.allExercisesCompleted,
             style: TextStyle(color: c.textPrimary)),
-        content: Text('Möchtest du das Workout beenden?',
+        content: Text(context.l10n.confirmEndWorkout,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Weiter trainieren',
+              context.l10n.keepTraining,
               style: TextStyle(color: c.textSecondary),
             ),
           ),
@@ -721,7 +734,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               _finishWorkout();
             },
             child: Text(
-              'Workout beenden',
+              context.l10n.endWorkout,
               style: TextStyle(
                 color: c.accent,
                 fontWeight: FontWeight.w600,
@@ -735,8 +748,13 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
 
   Future<void> _finishWorkout() async {
     final state = ref.read(activeWorkoutProvider);
+    final planId = state.planId;
     final summary =
         await ref.read(activeWorkoutProvider.notifier).finishWorkout();
+    if (planId != null) {
+      ref.invalidate(planHistoryProvider(planId));
+      ref.invalidate(planCompletionProvider(planId));
+    }
     if (mounted && summary != null) {
       context.go('/workout-complete', extra: {
         'planName': state.planName,

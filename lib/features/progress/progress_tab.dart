@@ -9,6 +9,7 @@ import '../../shared/widgets/iron_card.dart';
 import '../../shared/widgets/section_header.dart';
 import 'widgets/muscle_distribution.dart';
 import 'widgets/overall_progress_card.dart';
+import '../../l10n/l10n_helper.dart';
 import 'widgets/strength_preview.dart';
 
 // Provider for exercises the user has actually trained
@@ -52,30 +53,30 @@ class ProgressTab extends ConsumerWidget {
     final trainedExercises = ref.watch(trainedExercisesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Fortschritt')),
+      appBar: AppBar(title: Text(context.l10n.progress)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
-          const SectionHeader(title: 'Deine Steigerung'),
+          SectionHeader(title: context.l10n.yourProgress),
           const OverallProgressCard(),
 
           const SizedBox(height: IronRepSpacing.xl),
-          const SectionHeader(title: 'Muskelverteilung'),
+          SectionHeader(title: context.l10n.muscleDistribution),
           const MuscleDistribution(),
 
           const SizedBox(height: IronRepSpacing.xl),
-          const SectionHeader(title: 'Kraftentwicklung'),
+          SectionHeader(title: context.l10n.strengthDevelopment),
           const StrengthPreview(),
 
           const SizedBox(height: IronRepSpacing.xl),
-          const SectionHeader(title: 'Deine Übungen'),
+          SectionHeader(title: context.l10n.yourExercises),
           trainedExercises.when(
             data: (exercises) {
               if (exercises.isEmpty) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
-                    'Schließe ein Workout ab, um deine Übungen hier zu sehen',
+                    context.l10n.completeWorkoutToSeeExercises,
                     style: TextStyle(color: c.textMuted),
                   ),
                 );
@@ -132,7 +133,7 @@ class ProgressTab extends ConsumerWidget {
               );
             },
             loading: () => const SizedBox(height: 60),
-            error: (e, _) => Text('Error: $e'),
+            error: (e, _) => Text(context.l10n.error('$e')),
           ),
 
           const SizedBox(height: IronRepSpacing.lg),

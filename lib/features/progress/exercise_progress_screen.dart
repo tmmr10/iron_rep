@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../shared/design_system.dart';
+import '../../l10n/l10n_helper.dart';
 import 'widgets/strength_chart.dart';
 
 class ExerciseProgressScreen extends ConsumerWidget {
@@ -20,12 +21,12 @@ class ExerciseProgressScreen extends ConsumerWidget {
         title: exerciseAsync.whenOrNull(
               data: (e) => Text(e.name),
             ) ??
-            const Text('Fortschritt'),
+            Text(context.l10n.progress),
       ),
       body: ListView(
         padding: IronRepSpacing.screenPadding,
         children: [
-          Text('Kraftentwicklung',
+          Text(context.l10n.strengthDevelopment,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: IronRepSpacing.md),
           SizedBox(
@@ -33,7 +34,7 @@ class ExerciseProgressScreen extends ConsumerWidget {
             child: StrengthChart(exerciseId: exerciseId),
           ),
           const SizedBox(height: IronRepSpacing.xl),
-          Text('Persönliche Rekorde',
+          Text(context.l10n.personalRecords,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: IronRepSpacing.md),
           _RecordsSection(exerciseId: exerciseId),
@@ -56,7 +57,7 @@ class _RecordsSection extends ConsumerWidget {
       builder: (context, snapshot) {
         final records = snapshot.data;
         if (records == null || records.isEmpty) {
-          return Text('Noch keine Rekorde',
+          return Text(context.l10n.noRecordsYet,
               style: TextStyle(color: c.textMuted));
         }
         return Column(
@@ -65,13 +66,13 @@ class _RecordsSection extends ConsumerWidget {
             String value;
             switch (r.recordType) {
               case 'max_weight':
-                label = 'Max Weight';
+                label = context.l10n.maxWeight;
                 value = '${r.value.toStringAsFixed(1)} kg';
               case 'max_reps':
-                label = 'Max Reps';
+                label = context.l10n.maxReps;
                 value = '${r.value.toInt()}';
               case 'max_volume':
-                label = 'Max Volume';
+                label = context.l10n.maxVolume;
                 value = '${r.value.toStringAsFixed(0)} kg';
               default:
                 label = r.recordType;

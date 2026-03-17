@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/stats_providers.dart';
 import '../../../shared/design_system.dart';
+import '../../../shared/widgets/tap_scale.dart';
 import '../progress_tab.dart';
+import '../../../l10n/l10n_helper.dart';
 import 'strength_chart.dart';
 
 final strengthTrendProvider = FutureProvider.family<
@@ -27,6 +29,79 @@ class StrengthPreview extends ConsumerStatefulWidget {
 class _StrengthPreviewState extends ConsumerState<StrengthPreview> {
   int? _selectedExerciseId;
 
+  void _showExercisePicker(
+    BuildContext context,
+    AppColors c,
+    List<({int id, String name, String muscleGroup, double lastWeight})> exercises,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        maxChildSize: 0.8,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (ctx, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: exercises.length,
+                  itemBuilder: (_, index) {
+                    final ex = exercises[index];
+                    final isSelected = ex.id == _selectedExerciseId;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        ex.name,
+                        style: TextStyle(
+                          color: isSelected ? c.accent : c.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check, color: c.accent, size: 20)
+                          : null,
+                      onTap: () {
+                        setState(() => _selectedExerciseId = ex.id);
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -38,7 +113,7 @@ class _StrengthPreviewState extends ConsumerState<StrengthPreview> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              'Schließe ein Workout ab, um Kraftentwicklung zu sehen',
+              context.l10n.completeWorkoutToSeeStrength,
               style: TextStyle(color: c.textMuted),
             ),
           );
@@ -54,34 +129,30 @@ class _StrengthPreviewState extends ConsumerState<StrengthPreview> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Exercise dropdown selector
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: c.card,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: c.border.withValues(alpha: 0.5)),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: selected.id,
-                  isExpanded: true,
-                  dropdownColor: c.card,
-                  icon: Icon(Icons.keyboard_arrow_down, color: c.textMuted),
-                  style: TextStyle(
-                    color: c.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  items: exercises.map((ex) {
-                    return DropdownMenuItem<int>(
-                      value: ex.id,
-                      child: Text(ex.name),
-                    );
-                  }).toList(),
-                  onChanged: (id) {
-                    if (id != null) setState(() => _selectedExerciseId = id);
-                  },
+            // Exercise selector
+            TapScale(
+              onTap: () => _showExercisePicker(context, c, exercises),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: c.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.border.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selected.name,
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down, color: c.textMuted),
+                  ],
                 ),
               ),
             ),
@@ -98,7 +169,7 @@ class _StrengthPreviewState extends ConsumerState<StrengthPreview> {
         );
       },
       loading: () => const SizedBox(height: 60),
-      error: (e, _) => Text('Error: $e'),
+      error: (e, _) => Text(context.l10n.error('$e')),
     );
   }
 }
@@ -127,7 +198,7 @@ class _TrendRow extends ConsumerWidget {
         return Row(
           children: [
             Text(
-              'Aktuell: ${trend.current.toStringAsFixed(1)} kg',
+              context.l10n.currentWeight(trend.current.toStringAsFixed(1)),
               style: TextStyle(
                 color: c.textPrimary,
                 fontWeight: FontWeight.w600,

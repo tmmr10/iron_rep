@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
+import '../../providers/plan_providers.dart';
 import '../../providers/workout_providers.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
 import '../plans/exercise_picker_sheet.dart';
 import 'set_logger_card.dart';
@@ -71,8 +73,8 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Expanded(
-                child: Center(child: Text('Kein aktives Workout')),
+              Expanded(
+                child: Center(child: Text(context.l10n.noActiveWorkout)),
               ),
             ],
           ),
@@ -144,7 +146,7 @@ class _ListModeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          state.planName ?? 'Training',
+                          state.planName ?? context.l10n.training,
                           style: TextStyle(
                             color: c.textPrimary,
                             fontWeight: FontWeight.w700,
@@ -163,7 +165,7 @@ class _ListModeScreen extends ConsumerWidget {
                             ),
                             if (isPaused)
                               Text(
-                                ' · Pausiert',
+                                ' · ${context.l10n.paused}',
                                 style: TextStyle(
                                   color: c.warning,
                                   fontSize: 13,
@@ -171,7 +173,7 @@ class _ListModeScreen extends ConsumerWidget {
                                 ),
                               ),
                             Text(
-                              ' · $completedSets/$totalSets Sätze',
+                              ' · ${context.l10n.completedOfTotalSets(completedSets, totalSets)}',
                               style: TextStyle(
                                 color: c.textMuted,
                                 fontSize: 13,
@@ -292,7 +294,7 @@ class _ListModeScreen extends ConsumerWidget {
                                       Icon(Icons.add, color: c.textMuted, size: 18),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Übung hinzufügen',
+                                        context.l10n.addExercise,
                                         style: TextStyle(
                                           color: c.textMuted,
                                           fontWeight: FontWeight.w500,
@@ -317,7 +319,7 @@ class _ListModeScreen extends ConsumerWidget {
                     },
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('Fehler: $e')),
+                    error: (e, _) => Center(child: Text(context.l10n.error(e.toString()))),
                   ),
                   const Positioned(
                     left: 0,
@@ -349,10 +351,10 @@ class _ListModeScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'Workout beenden',
-                          style: TextStyle(
+                          context.l10n.endWorkout,
+                          style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -366,7 +368,7 @@ class _ListModeScreen extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Text(
-                        'Verwerfen',
+                        context.l10n.discard,
                         style: TextStyle(
                           color: c.textMuted,
                           fontSize: 14,
@@ -385,8 +387,13 @@ class _ListModeScreen extends ConsumerWidget {
 
   Future<void> _finishWorkout(BuildContext context, WidgetRef ref) async {
     final state = ref.read(activeWorkoutProvider);
+    final planId = state.planId;
     final summary =
         await ref.read(activeWorkoutProvider.notifier).finishWorkout();
+    if (planId != null) {
+      ref.invalidate(planHistoryProvider(planId));
+      ref.invalidate(planCompletionProvider(planId));
+    }
     if (context.mounted && summary != null) {
       context.go('/workout-complete', extra: {
         'planName': state.planName,
@@ -436,14 +443,14 @@ class _ListModeScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Workout verwerfen?',
+        title: Text(context.l10n.discardWorkoutConfirm,
             style: TextStyle(color: c.textPrimary)),
-        content: Text('Alle Fortschritte gehen verloren.',
+        content: Text(context.l10n.allProgressWillBeLost,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Weitermachen'),
+            child: Text(context.l10n.continueTraining),
           ),
           TextButton(
             onPressed: () async {
@@ -455,7 +462,7 @@ class _ListModeScreen extends ConsumerWidget {
                 context.go('/workout');
               }
             },
-            child: Text('Verwerfen', style: TextStyle(color: c.error)),
+            child: Text(context.l10n.discard, style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -489,7 +496,7 @@ class _PreStartView extends ConsumerWidget {
                   ),
                   Expanded(
                     child: Text(
-                      state.planName ?? 'Training',
+                      state.planName ?? context.l10n.training,
                       style: TextStyle(
                         color: c.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -508,7 +515,7 @@ class _PreStartView extends ConsumerWidget {
                   if (exercises.isEmpty) {
                     return Center(
                       child: Text(
-                        'Keine Übungen im Plan',
+                        context.l10n.noExercisesInPlan,
                         style: TextStyle(color: c.textMuted),
                       ),
                     );
@@ -535,7 +542,7 @@ class _PreStartView extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              '${ex.targetSets} Sätze',
+                              context.l10n.setsCompact(ex.targetSets),
                               style: TextStyle(
                                 color: c.textMuted,
                                 fontSize: 14,
@@ -549,7 +556,7 @@ class _PreStartView extends ConsumerWidget {
                 },
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Fehler: $e')),
+                error: (e, _) => Center(child: Text(context.l10n.error(e.toString()))),
               ),
             ),
             Padding(
@@ -572,7 +579,7 @@ class _PreStartView extends ConsumerWidget {
                   ),
                   child: Center(
                     child: Text(
-                      'Workout starten',
+                      context.l10n.startWorkout,
                       style: TextStyle(
                         color: c.accent,
                         fontWeight: FontWeight.w600,

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../models/workout_history_item.dart';
-import '../../../providers/stats_providers.dart';
 import '../../../shared/design_system.dart';
+import '../../../shared/widgets/tap_scale.dart';
 
-class WorkoutCalendar extends StatefulWidget {
+class WorkoutCalendar extends ConsumerStatefulWidget {
   final List<WorkoutHistoryItem> workouts;
 
   const WorkoutCalendar({super.key, required this.workouts});
 
   @override
-  State<WorkoutCalendar> createState() => _WorkoutCalendarState();
+  ConsumerState<WorkoutCalendar> createState() => _WorkoutCalendarState();
 }
 
-class _WorkoutCalendarState extends State<WorkoutCalendar> {
+class _WorkoutCalendarState extends ConsumerState<WorkoutCalendar> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
 
@@ -35,6 +36,64 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
     return _workoutsByDay[key] ?? [];
   }
 
+  /// Returns ISO week entries for weeks overlapping the focused month.
+  List<({int weekNumber, int count, bool isCurrent})> _monthWeeks() {
+    final year = _focusedDay.year;
+    final month = _focusedDay.month;
+    final firstOfMonth = DateTime(year, month, 1);
+    final lastOfMonth = DateTime(year, month + 1, 0);
+    final now = DateTime.now();
+    final currentMonday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+
+    // Find Monday of the week containing the 1st
+    var monday = firstOfMonth.subtract(
+      Duration(days: (firstOfMonth.weekday - 1)),
+    );
+
+    final weeks = <({int weekNumber, int count, bool isCurrent})>[];
+    while (monday.isBefore(lastOfMonth) ||
+        monday.isAtSameMomentAs(lastOfMonth)) {
+      // Count workouts in this week
+      int count = 0;
+      for (int d = 0; d < 7; d++) {
+        final day = monday.add(Duration(days: d));
+        final key = DateTime(day.year, day.month, day.day);
+        count += _workoutsByDay[key]?.length ?? 0;
+      }
+
+      final isCurrent = monday.year == currentMonday.year &&
+          monday.month == currentMonday.month &&
+          monday.day == currentMonday.day;
+
+      weeks.add((
+        weekNumber: _isoWeekNumber(monday),
+        count: count,
+        isCurrent: isCurrent,
+      ));
+
+      monday = monday.add(const Duration(days: 7));
+    }
+    return weeks;
+  }
+
+  int _isoWeekNumber(DateTime date) {
+    final dayOfYear =
+        date.difference(DateTime(date.year, 1, 1)).inDays + 1;
+    return ((dayOfYear - date.weekday + 10) / 7).floor();
+  }
+
+  int get _monthWorkoutCount {
+    final year = _focusedDay.year;
+    final month = _focusedDay.month;
+    int count = 0;
+    for (final w in widget.workouts) {
+      final date = w.completedAt ?? w.startedAt;
+      if (date.year == year && date.month == month) count++;
+    }
+    return count;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -42,17 +101,75 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
         ? _getWorkoutsForDay(_selectedDay!)
         : <WorkoutHistoryItem>[];
 
+    final weeks = _monthWeeks();
+    final monthTotal = _monthWorkoutCount;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
       children: [
+        // Custom header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: Icon(Icons.chevron_left, color: c.textSecondary),
+              onPressed: () => setState(() {
+                _focusedDay = DateTime(
+                  _focusedDay.year,
+                  _focusedDay.month - 1,
+                );
+              }),
+            ),
+            Column(
+              children: [
+                Text(
+                  _monthYearLabel(_focusedDay),
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (monthTotal > 0)
+                  Text(
+                    '$monthTotal Workout${monthTotal == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      color: c.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+              ],
+            ),
+            IconButton(
+              icon: Icon(Icons.chevron_right, color: c.textSecondary),
+              onPressed: () => setState(() {
+                _focusedDay = DateTime(
+                  _focusedDay.year,
+                  _focusedDay.month + 1,
+                );
+              }),
+            ),
+          ],
+        ),
+        // KW week strip
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (final w in weeks) _KWRing(week: w),
+            ],
+          ),
+        ),
         TableCalendar<WorkoutHistoryItem>(
           firstDay: DateTime(2020),
-          lastDay: DateTime.now().add(const Duration(days: 1)),
+          lastDay: DateTime(2100),
           focusedDay: _focusedDay,
           selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
           eventLoader: _getWorkoutsForDay,
           startingDayOfWeek: StartingDayOfWeek.monday,
           locale: 'de_DE',
+          headerVisible: false,
           onDaySelected: (selectedDay, focusedDay) {
             setState(() {
               _selectedDay = selectedDay;
@@ -60,7 +177,9 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
             });
           },
           onPageChanged: (focusedDay) {
-            _focusedDay = focusedDay;
+            setState(() {
+              _focusedDay = focusedDay;
+            });
           },
           calendarStyle: CalendarStyle(
             outsideDaysVisible: false,
@@ -83,19 +202,6 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
             ),
             markersMaxCount: 0,
             cellMargin: const EdgeInsets.all(4),
-          ),
-          headerStyle: HeaderStyle(
-            titleCentered: true,
-            formatButtonVisible: false,
-            titleTextStyle: TextStyle(
-              color: c.textPrimary,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
-            leftChevronIcon:
-                Icon(Icons.chevron_left, color: c.textSecondary),
-            rightChevronIcon:
-                Icon(Icons.chevron_right, color: c.textSecondary),
           ),
           daysOfWeekStyle: DaysOfWeekStyle(
             weekdayStyle: TextStyle(color: c.textMuted, fontSize: 12),
@@ -127,111 +233,75 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
                 child: _CalendarWorkoutCard(workout: w),
               )),
         ],
-        const SizedBox(height: IronRepSpacing.xl),
-        const _WeeklyFrequencyStrip(),
       ],
     );
   }
-}
 
-class _WeeklyFrequencyStrip extends ConsumerWidget {
-  const _WeeklyFrequencyStrip();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = AppColors.of(context);
-    final asyncWeeks = ref.watch(weeklyFrequencyProvider);
-
-    return asyncWeeks.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (weeks) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Letzte 8 Wochen',
-              style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: IronRepSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                for (int i = 0; i < weeks.length; i++)
-                  _FrequencyCircle(
-                    count: weeks[i].count,
-                    weekStart: weeks[i].weekStart,
-                    isCurrentWeek: i == weeks.length - 1,
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
+  String _monthYearLabel(DateTime date) {
+    return DateFormat.yMMMM(Localizations.localeOf(context).languageCode).format(date);
   }
 }
 
-class _FrequencyCircle extends StatelessWidget {
-  final int count;
-  final DateTime weekStart;
-  final bool isCurrentWeek;
+class _KWRing extends StatelessWidget {
+  final ({int weekNumber, int count, bool isCurrent}) week;
 
-  const _FrequencyCircle({
-    required this.count,
-    required this.weekStart,
-    required this.isCurrentWeek,
-  });
-
-  int get _calendarWeek {
-    final dayOfYear = weekStart.difference(DateTime(weekStart.year)).inDays + 1;
-    return ((dayOfYear - weekStart.weekday + 10) / 7).floor();
-  }
+  const _KWRing({required this.week});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final count = week.count;
     final hasWorkouts = count > 0;
 
+    // Ring opacity based on count
+    final double ringAlpha = count == 0
+        ? 0.2
+        : count <= 2
+            ? 0.6
+            : 1.0;
+    final double fillAlpha = count == 0
+        ? 0.0
+        : count <= 2
+            ? 0.12
+            : 0.22;
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
             color: hasWorkouts
-                ? c.accent.withValues(alpha: isCurrentWeek ? 0.25 : 0.15)
+                ? c.accent.withValues(alpha: fillAlpha)
                 : null,
-            borderRadius: BorderRadius.circular(16),
+            shape: BoxShape.circle,
             border: Border.all(
-              color: hasWorkouts
-                  ? c.accent.withValues(alpha: isCurrentWeek ? 1.0 : 0.6)
-                  : c.border,
-              width: isCurrentWeek && hasWorkouts ? 1.5 : 1,
+              color: c.accent.withValues(
+                alpha: week.isCurrent ? 1.0 : ringAlpha,
+              ),
+              width: week.isCurrent ? 2.0 : 1.0,
             ),
           ),
           alignment: Alignment.center,
-          child: hasWorkouts
-              ? Text(
-                  '$count',
-                  style: TextStyle(
-                    color: c.accent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              : null,
+          child: Text(
+            '$count',
+            style: TextStyle(
+              color: hasWorkouts
+                  ? c.accent
+                  : c.textMuted,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
-          'KW$_calendarWeek',
+          'KW${week.weekNumber}',
           style: TextStyle(
-            color: c.textMuted,
+            color: week.isCurrent ? c.accent : c.textMuted,
             fontSize: 10,
+            fontWeight: week.isCurrent ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ],
@@ -249,7 +319,7 @@ class _CalendarWorkoutCard extends StatelessWidget {
     final c = AppColors.of(context);
     final w = workout;
 
-    return GestureDetector(
+    return TapScale(
       onTap: () => context.push('/workout-detail/${w.id}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

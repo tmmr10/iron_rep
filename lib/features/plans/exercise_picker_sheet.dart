@@ -5,6 +5,8 @@ import '../../models/enums.dart';
 import '../../providers/exercise_providers.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/muscle_group_chip.dart';
+import '../../l10n/enum_labels.dart';
+import '../../l10n/l10n_helper.dart';
 import '../exercises/create_exercise_sheet.dart';
 
 class ExercisePickerSheet extends ConsumerStatefulWidget {
@@ -74,9 +76,9 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                   controller: _searchController,
                   onChanged: (v) =>
                       ref.read(exerciseSearchQueryProvider.notifier).state = v,
-                  decoration: const InputDecoration(
-                    hintText: 'Übungen suchen...',
-                    prefixIcon: Icon(Icons.search),
+                  decoration: InputDecoration(
+                    hintText: context.l10n.searchExercises,
+                    prefixIcon: const Icon(Icons.search),
                   ),
                 ),
               ),
@@ -88,7 +90,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                   foregroundColor: c.background,
                 ),
                 icon: const Icon(Icons.add),
-                tooltip: 'Neue Übung erstellen',
+                tooltip: context.l10n.createNewExercise,
               ),
             ],
           ),
@@ -139,7 +141,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                     ),
                     title: Text(e.name,
                         style: TextStyle(color: c.textPrimary)),
-                    subtitle: Text(muscle.label,
+                    subtitle: Text(muscle.localizedLabel(context),
                         style: TextStyle(
                             color: c.textSecondary, fontSize: 12)),
                     onTap: () => widget.onSelect(e.id, e.name),
@@ -149,7 +151,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Fehler: $e')),
+            error: (e, _) => Center(child: Text(context.l10n.error('$e'))),
           ),
         ),
       ],

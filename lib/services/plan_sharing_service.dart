@@ -108,7 +108,8 @@ class PlanSharingService {
     }
   }
 
-  static String buildShareUrl(String encoded) => 'ironrep://plan/$encoded';
+  static String buildShareUrl(String encoded) =>
+      'https://tmmr10.github.io/ironrep-share/#$encoded';
 
   static Future<List<MatchedExercise>> matchExercises(
       AppDatabase db, SharedPlan plan) async {

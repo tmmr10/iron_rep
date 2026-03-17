@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/enum_labels.dart';
 import '../../models/enums.dart';
 import '../design_system.dart';
 
@@ -33,7 +34,7 @@ class SetInputRow extends StatelessWidget {
     final c = AppColors.of(context);
     final typeLabel = SetType.values
         .firstWhere((t) => t.name == setType, orElse: () => SetType.working)
-        .label;
+        .localizedLabel(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(

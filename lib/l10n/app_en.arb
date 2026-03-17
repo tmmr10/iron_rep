@@ -1,0 +1,415 @@
+{
+  "@@locale": "en",
+
+  "navWorkout": "Workout",
+  "navActivity": "Activity",
+  "navProgress": "Progress",
+  "navMore": "More",
+
+  "welcomeTitle": "Welcome to IronRep",
+  "whatsYourName": "What's your name?",
+  "yourNameHint": "Your name",
+  "letsGo": "Let's go",
+  "later": "Later",
+
+  "greetingMorning": "Good morning",
+  "greetingAfternoon": "Good afternoon",
+  "greetingEvening": "Good evening",
+
+  "motivationStreakRunning1": "Your streak is going – keep it up!",
+  "motivationStreakRunning2": "Consistency beats perfection.",
+  "motivationWeekGreat1": "What a week – respect!",
+  "motivationWeekGreat2": "You're on fire this week!",
+  "motivationWeekGreat3": "Absolute peak form!",
+  "motivationWeekGood1": "Good rhythm, keep it up!",
+  "motivationWeekGood2": "Strong week so far!",
+  "motivationWeekOne1": "Good start this week!",
+  "motivationWeekOne2": "One done – more to come?",
+  "motivationWeekOne3": "The first step is done.",
+  "motivationMorning1": "Perfect way to start the day – get training!",
+  "motivationMorning2": "Train in the morning, benefit all day.",
+  "motivationMorning3": "Your body is waiting for you.",
+  "motivationMorning4": "A morning workout sets the tone.",
+  "motivationDay1": "Ready for your training?",
+  "motivationDay2": "Time for a session?",
+  "motivationDay3": "Every set counts.",
+  "motivationDay4": "Stronger than yesterday.",
+  "motivationEvening1": "Still time for an evening workout?",
+  "motivationEvening2": "The day isn't over yet.",
+  "motivationEvening3": "Train in the evening, sleep better.",
+  "motivationEvening4": "Last chance today – make it count!",
+  "motivationStrongStreak1": "Machine. Just machine.",
+  "motivationStrongStreak2": "Unstoppable – 4+ weeks streak!",
+  "motivationStrongStreak3": "Discipline pays off.",
+
+  "yourStats": "Your stats",
+  "yourWorkouts": "Your workouts",
+  "createFirstPlanTitle": "Create your first training plan",
+  "createFirstPlanSubtitle": "Choose your exercises, set the number of sets, and start your training.",
+  "createPlan": "Create workout",
+  "newPlan": "New workout",
+  "thisWeek": "This week",
+
+  "workoutCompleted": "Workout completed!",
+  "duration": "Duration",
+  "exercises": "Exercises",
+  "sets": "Sets",
+  "volume": "Volume",
+  "skipped": "skipped",
+  "done": "Done",
+
+  "skip": "Skip",
+  "nextSet": "Next set",
+  "nextExercise": "Next exercise",
+  "addSet": "Add set",
+  "exerciseOf": "Exercise {current} of {total}",
+  "@exerciseOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "nextExerciseLabel": "Next: {name}",
+  "@nextExerciseLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "completeSet": "Complete set",
+  "showAllExercises": "Show all exercises",
+  "allExercisesCompleted": "All exercises completed!",
+  "confirmEndWorkout": "Do you want to end the workout?",
+  "addExercise": "Add exercise",
+  "noExercisesInPlan": "No exercises in workout",
+
+  "createNewExercise": "Create new exercise",
+  "exerciseName": "Exercise name",
+  "exerciseNameHint": "e.g. Dumbbell lateral raise",
+  "muscleGroup": "Muscle group",
+  "equipmentOptional": "Equipment (optional)",
+  "noEquipment": "No equipment",
+  "createExercise": "Create exercise",
+  "searchExercise": "Search exercise...",
+  "noExercisesFound": "No exercises found",
+  "noExercisesInCategory": "No exercises in this category",
+
+  "discardChanges": "Discard changes?",
+  "changesWillBeLost": "Your changes will be lost.",
+  "continueEditing": "Continue editing",
+  "discard": "Discard",
+
+  "editExercise": "Edit exercise",
+  "nameInputLabel": "Exercise name",
+  "nameInputHint": "Enter name",
+  "instructionsLabel": "Instructions (optional)",
+  "instructionsHint": "Describe execution",
+  "trackWeight": "Track weight",
+  "equipment": "Equipment",
+  "save": "Save",
+
+  "edit": "Edit",
+  "cameraPhoto": "Take photo",
+  "galleryPhoto": "Choose from gallery",
+  "removePhoto": "Remove photo",
+  "addPhoto": "Add photo",
+  "deleteExercise": "Delete exercise",
+  "deleteExerciseConfirm": "Delete exercise?",
+  "deleteExerciseMessage": "The exercise will be removed from the list. Existing workouts will be retained.",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "instructions": "Instructions",
+  "progressButton": "Show progress",
+
+  "activity": "Activity",
+  "logManualWorkout": "Log workout manually",
+  "noWorkoutsYet": "No workouts yet",
+  "completeFirstWorkout": "Complete your first workout",
+  "workoutNameHint": "e.g. Upper body",
+  "planExercisesAutoImport": "The exercises from the plan will be imported automatically. You can add sets in edit mode.",
+  "manualExercisesAddLater": "You can add exercises and sets in edit mode after creation.",
+
+  "deleteWorkout": "Delete workout",
+  "deleteWorkoutConfirm": "Delete workout?",
+  "deleteWorkoutMessage": "The workout and all associated data will be permanently deleted.",
+  "skippedCapital": "Skipped",
+
+  "progress": "Progress",
+  "yourProgress": "Your progress",
+  "muscleDistribution": "Muscle distribution",
+  "strengthDevelopment": "Strength development",
+  "yourExercises": "Your exercises",
+  "completeWorkoutToSeeExercises": "Complete a workout to see your exercises here",
+  "personalRecords": "Personal records",
+  "completeWorkoutToSeeStrength": "Complete a workout to see strength development",
+  "maxWeight": "Max weight",
+  "maxReps": "Max reps",
+  "maxVolume": "Max volume",
+  "noRecordsYet": "No records yet",
+  "currentWeight": "Current: {weight} kg",
+  "@currentWeight": {
+    "placeholders": {
+      "weight": {"type": "String"}
+    }
+  },
+
+  "allPlans": "All plans",
+  "perExercise": "Per exercise",
+
+  "exercisesNotRecognized": "not recognized – will be skipped during import",
+  "customExerciseCreated": "Will be created as custom exercise",
+  "exerciseNotFound": "Exercise not found",
+
+  "planName": "Workout name",
+  "exercisesSectionHeader": "EXERCISES",
+  "exercisesCount": "{count} exercises · {sets} sets",
+  "@exercisesCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "sets": {"type": "int"}
+    }
+  },
+  "enterPlanName": "Please enter a workout name",
+  "addAtLeastOneExercise": "Add at least one exercise",
+  "sharePlan": "Share workout",
+  "deletePlan": "Delete workout",
+  "deletePlanConfirm": "Delete workout?",
+  "cannotBeUndone": "This cannot be undone.",
+  "addExerciseEmptyState": "Every great plan starts with one exercise.\nTap + and get started!",
+  "searchExercises": "Search exercises...",
+
+  "settings": "Settings",
+  "name": "Name",
+  "notSet": "Not set",
+  "weightUnit": "Weight unit",
+  "defaultRestTime": "Default rest time",
+  "appearance": "Appearance",
+  "design": "Design",
+  "plansAndExercises": "Workouts & Exercises",
+  "managePlans": "Manage workouts",
+  "manageExercises": "Manage exercises",
+  "pro": "Pro",
+  "removeAds": "Remove ads",
+  "about": "About",
+  "version": "Version",
+  "openSourceLicenses": "Open source licenses",
+  "dark": "Dark",
+  "light": "Light",
+  "system": "System",
+  "createNewPlan": "Create new workout",
+
+  "adFreeDescription": "Enjoy an ad-free experience with a one-time purchase.",
+  "supportIndieDev": "Support indie development",
+  "buyForPrice": "Buy for {price}",
+  "@buyForPrice": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "purchaseFailed": "Purchase failed. Please try again.",
+  "noAdBanners": "No ad banners",
+  "fasterCleanerExperience": "Faster, cleaner experience",
+  "restorePurchase": "Restore purchase",
+
+  "language": "Language",
+  "languageSystem": "System",
+  "languageGerman": "Deutsch",
+  "languageEnglish": "English",
+
+  "all": "All",
+  "error": "Error: {message}",
+  "@error": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "noPlanFound": "No plan found",
+
+  "muscleChest": "Chest",
+  "muscleBack": "Back",
+  "muscleShoulders": "Shoulders",
+  "muscleBiceps": "Biceps",
+  "muscleTriceps": "Triceps",
+  "muscleForearms": "Forearms",
+  "muscleQuadriceps": "Quadriceps",
+  "muscleHamstrings": "Hamstrings",
+  "muscleGlutes": "Glutes",
+  "muscleCalves": "Calves",
+  "muscleCore": "Core",
+  "muscleFullBody": "Full body",
+  "muscleCardio": "Cardio",
+
+  "equipBarbell": "Barbell",
+  "equipDumbbell": "Dumbbell",
+  "equipCable": "Cable",
+  "equipMachine": "Machine",
+  "equipBodyweight": "Bodyweight",
+  "equipBenchPress": "Bench press",
+  "equipLatPulldown": "Lat pulldown",
+  "equipLegExtension": "Leg extension",
+  "equipLegCurl": "Leg curl",
+  "equipSeatedRow": "Seated row",
+  "equipShoulderPress": "Shoulder press",
+  "equipSmithMachine": "Smith machine",
+  "equipChestFly": "Chest fly",
+  "equipRowingMachine": "Rowing machine",
+  "equipTreadmill": "Treadmill",
+  "equipStationaryBike": "Stationary bike",
+  "equipElliptical": "Elliptical",
+  "equipBench": "Flat bench",
+  "equipInclineBench": "Incline bench",
+  "equipDipStation": "Dip station",
+  "equipPullUpBar": "Pull-up bar",
+  "equipHyperextensionBench": "Hyperextension bench",
+  "equipPreacherCurlBench": "Preacher curl bench",
+
+  "setTypeWarmup": "Warm-up",
+  "setTypeWorking": "Working set",
+  "setTypeDropset": "Drop set",
+  "setTypeFailure": "To failure",
+
+  "paused": "Paused",
+  "tapToResume": "Tap to resume",
+  "training": "Training",
+  "startTraining": "Start training",
+  "startWorkout": "Start workout",
+  "endWorkout": "End workout",
+  "discardWorkout": "Discard workout",
+  "discardWorkoutConfirm": "Discard workout?",
+  "allProgressWillBeLost": "All progress will be lost.",
+  "continueTraining": "Continue",
+  "keepTraining": "Keep training",
+  "setCompleted": "Set completed",
+  "setOfTotal": "Set {current} of {total}",
+  "@setOfTotal": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "setOfTotalLoading": "Set 1 of …",
+  "noActiveWorkout": "No active workout",
+  "setsCount": "Sets",
+  "completedOfTotalSets": "{completed}/{total} sets",
+  "@completedOfTotalSets": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "restPause": "Rest",
+  "timeAgoToday": "today",
+  "timeAgoYesterday": "yesterday",
+  "timeAgoDays": "{days} days ago",
+  "@timeAgoDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "timeAgoWeeks": "{weeks} weeks ago",
+  "@timeAgoWeeks": {
+    "placeholders": {
+      "weeks": {"type": "int"}
+    }
+  },
+  "timeAgoMonths": "{months} months ago",
+  "@timeAgoMonths": {
+    "placeholders": {
+      "months": {"type": "int"}
+    }
+  },
+  "lastWorkout": "Last {timeAgo}",
+  "@lastWorkout": {
+    "placeholders": {
+      "timeAgo": {"type": "String"}
+    }
+  },
+  "completionOfPlanned": "{done}/{planned} exercises",
+  "@completionOfPlanned": {
+    "placeholders": {
+      "done": {"type": "int"},
+      "planned": {"type": "int"}
+    }
+  },
+  "streak": "Streak",
+  "workouts": "Workouts",
+  "avgDuration": "Avg. duration",
+  "prs": "PRs",
+  "pausedTime": "Paused · {time}",
+  "@pausedTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "skippedCount": "{count} skipped",
+  "@skippedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "workoutsThisWeekMotivation": "{count} workouts this week – keep it up!",
+  "@workoutsThisWeekMotivation": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakWeeksMotivation": "Unstoppable – {weeks} weeks streak!",
+  "@streakWeeksMotivation": {
+    "placeholders": {
+      "weeks": {"type": "int"}
+    }
+  },
+  "setsLabel": "{count} sets",
+  "@setsLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "setsCompact": "{count} sets",
+  "@setsCompact": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "noDataYet": "No data yet",
+  "noActivityYet": "No activity yet",
+  "noPRsYet": "No personal records yet",
+  "exerciseNumber": "Exercise #{id}",
+  "@exerciseNumber": {
+    "placeholders": {
+      "id": {"type": "int"}
+    }
+  },
+  "total": "Total",
+  "volumeLabel": "Volume",
+  "weightLabel": "Weight",
+  "importPlan": "Import workout",
+  "importPlanShareMessage": "Import plan in IronRep:\n{url}",
+  "@importPlanShareMessage": {
+    "placeholders": {
+      "url": {"type": "String"}
+    }
+  },
+  "trainingPlanOptional": "Training plan (optional)",
+  "noPlan": "No plan",
+  "dateLabel": "Date",
+  "startTime": "Start time",
+  "durationMinutes": "Duration: {minutes} minutes",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "createWorkout": "Create workout",
+  "noDataInPeriod": "No data in the comparison period yet. Keep training — your progress will show once there is enough history.",
+  "period1Week": "1 week",
+  "period2Weeks": "2 weeks",
+  "period4Weeks": "4 weeks",
+  "period8Weeks": "8 weeks",
+  "period12Weeks": "12 weeks",
+  "period6Months": "6 months",
+  "period1Year": "1 year",
+  "defaultWorkoutName": "Workout",
+  "adLabel": "Ad",
+  "reps": "Reps"
+}

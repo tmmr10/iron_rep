@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n_helper.dart';
 import '../../../providers/stats_providers.dart';
 import '../../../shared/design_system.dart';
 
@@ -17,7 +18,7 @@ class WeeklyVolumeChart extends ConsumerWidget {
       data: (data) {
         if (data.isEmpty) {
           return Center(
-            child: Text('Noch keine Daten',
+            child: Text(context.l10n.noDataYet,
                 style: TextStyle(color: c.textMuted)),
           );
         }
@@ -138,7 +139,7 @@ class WeeklyVolumeChart extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text(context.l10n.error('$e'))),
     );
   }
 }

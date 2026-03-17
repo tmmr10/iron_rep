@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n_helper.dart';
 import '../../../models/enums.dart';
 import '../../../providers/plan_providers.dart';
 import '../../../providers/stats_providers.dart';
 import '../../../shared/design_system.dart';
 
-const _periodOptions = [
-  (weeks: 1, label: '1 Woche'),
-  (weeks: 2, label: '2 Wochen'),
-  (weeks: 4, label: '4 Wochen'),
-  (weeks: 8, label: '8 Wochen'),
-  (weeks: 12, label: '12 Wochen'),
-  (weeks: 26, label: '6 Monate'),
-  (weeks: 52, label: '1 Jahr'),
-  (weeks: 0, label: 'Gesamt'),
+List<({int weeks, String label})> _periodOptions(BuildContext context) => [
+  (weeks: 1, label: context.l10n.period1Week),
+  (weeks: 2, label: context.l10n.period2Weeks),
+  (weeks: 4, label: context.l10n.period4Weeks),
+  (weeks: 8, label: context.l10n.period8Weeks),
+  (weeks: 12, label: context.l10n.period12Weeks),
+  (weeks: 26, label: context.l10n.period6Months),
+  (weeks: 52, label: context.l10n.period1Year),
+  (weeks: 0, label: context.l10n.total),
 ];
 
 class OverallProgressCard extends ConsumerStatefulWidget {
@@ -48,8 +49,8 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
                   return _Dropdown<int>(
                     value: _selectedPlanId,
                     items: [
-                      const DropdownMenuItem(
-                          value: 0, child: Text('Alle Pläne')),
+                      DropdownMenuItem(
+                          value: 0, child: Text(context.l10n.allPlans)),
                       ...plans.map((p) => DropdownMenuItem(
                           value: p.id, child: Text(p.name))),
                     ],
@@ -65,7 +66,7 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
             Expanded(
               child: _Dropdown<int>(
                 value: _selectedWeeks,
-                items: _periodOptions
+                items: _periodOptions(context)
                     .map((o) => DropdownMenuItem(
                         value: o.weeks, child: Text(o.label)))
                     .toList(),
@@ -97,9 +98,7 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Noch keine Daten im Vergleichszeitraum. '
-                          'Trainiere weiter — die Steigerung wird sichtbar, '
-                          'sobald genug Verlauf vorhanden ist.',
+                          context.l10n.noDataInPeriod,
                           style: TextStyle(
                               color: c.textMuted, fontSize: 12),
                         ),
@@ -114,13 +113,13 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
               child: Row(
                 children: [
                   _MetricChip(
-                    label: 'Volumen',
+                    label: context.l10n.volumeLabel,
                     value: data.volumeChange,
                     icon: Icons.show_chart,
                   ),
                   const SizedBox(width: 8),
                   _MetricChip(
-                    label: 'Gewicht',
+                    label: context.l10n.weightLabel,
                     value: data.avgWeightChange,
                     icon: Icons.fitness_center,
                   ),
@@ -129,7 +128,7 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
             );
           },
           loading: () => const SizedBox(height: 60),
-          error: (e, _) => Text('Error: $e'),
+          error: (e, _) => Text(context.l10n.error('$e')),
         ),
 
         // Per-exercise breakdown
@@ -142,7 +141,7 @@ class _OverallProgressCardState extends ConsumerState<OverallProgressCard> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8, top: 4),
                   child: Text(
-                    'Pro Übung',
+                    context.l10n.perExercise,
                     style: TextStyle(
                       color: c.textMuted,
                       fontSize: 12,
@@ -331,6 +330,7 @@ class _Dropdown<T> extends StatelessWidget {
         child: DropdownButton<T>(
           value: value,
           isExpanded: true,
+          menuMaxHeight: 300,
           dropdownColor: c.card,
           icon: Icon(Icons.keyboard_arrow_down, color: c.textMuted),
           style: TextStyle(

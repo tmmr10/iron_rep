@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/database_provider.dart';
+import '../../providers/plan_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
 import '../../database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
+
+import '../../l10n/l10n_helper.dart';
 
 class ManualWorkoutSheet extends ConsumerStatefulWidget {
   const ManualWorkoutSheet({super.key});
@@ -15,17 +18,29 @@ class ManualWorkoutSheet extends ConsumerStatefulWidget {
 }
 
 class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
-  final _nameController = TextEditingController(text: 'Workout');
+  late final TextEditingController _nameController;
   late DateTime _date;
   TimeOfDay _startTime = const TimeOfDay(hour: 10, minute: 0);
   int _durationMinutes = 60;
   bool _saving = false;
+  int? _selectedPlanId;
 
   @override
   void initState() {
     super.initState();
     _date = DateTime.now();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_nameInitialized) {
+      _nameController = TextEditingController(text: context.l10n.defaultWorkoutName);
+      _nameInitialized = true;
+    }
+  }
+
+  bool _nameInitialized = false;
 
   @override
   void dispose() {
@@ -74,11 +89,27 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             WorkoutsCompanion.insert(
               startedAt: startedAt,
               name: Value(name),
+              planId: Value(_selectedPlanId),
               isActive: const Value(false),
               completedAt: Value(completedAt),
               durationSeconds: Value(durationSeconds),
             ),
           );
+
+      // Insert plan exercises into the workout
+      if (_selectedPlanId != null) {
+        final planExercises =
+            await db.planDao.getPlanExercises(_selectedPlanId!);
+        for (var i = 0; i < planExercises.length; i++) {
+          await db.into(db.workoutExercises).insert(
+                WorkoutExercisesCompanion.insert(
+                  workoutId: workoutId,
+                  exerciseId: planExercises[i].exerciseId,
+                  sortOrder: i,
+                ),
+              );
+        }
+      }
 
       if (mounted) {
         ref.invalidate(workoutHistoryProvider);
@@ -88,7 +119,7 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(content: Text(context.l10n.error('$e'))),
         );
         setState(() => _saving = false);
       }
@@ -123,7 +154,7 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Training manuell eintragen',
+              context.l10n.logManualWorkout,
               style: TextStyle(
                 color: c.textPrimary,
                 fontSize: 20,
@@ -132,13 +163,74 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             ),
             const SizedBox(height: 20),
 
+            // Plan (optional)
+            Text(context.l10n.trainingPlanOptional,
+                style: TextStyle(color: c.textSecondary, fontSize: 13)),
+            const SizedBox(height: 8),
+            Consumer(builder: (context, ref, _) {
+              final plansAsync = ref.watch(allPlansProvider);
+              return plansAsync.when(
+                data: (plans) {
+                  if (plans.isEmpty) return const SizedBox.shrink();
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: c.card,
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: c.border.withValues(alpha: 0.3)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int?>(
+                        value: _selectedPlanId,
+                        isExpanded: true,
+                        menuMaxHeight: 300,
+                        dropdownColor: c.card,
+                        hint: Text(context.l10n.noPlan,
+                            style: TextStyle(color: c.textMuted)),
+                        icon: Icon(Icons.keyboard_arrow_down,
+                            color: c.textMuted),
+                        style:
+                            TextStyle(color: c.textPrimary, fontSize: 15),
+                        items: [
+                          DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text(context.l10n.noPlan,
+                                style: TextStyle(color: c.textMuted)),
+                          ),
+                          ...plans.map((p) => DropdownMenuItem<int?>(
+                                value: p.id,
+                                child: Text(p.name),
+                              )),
+                        ],
+                        onChanged: (v) {
+                          setState(() {
+                            _selectedPlanId = v;
+                            if (v != null) {
+                              final plan =
+                                  plans.firstWhere((p) => p.id == v);
+                              _nameController.text = plan.name;
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            }),
+            const SizedBox(height: 16),
+
             // Name
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'z.B. Oberkörper',
+              decoration: InputDecoration(
+                labelText: context.l10n.name,
+                hintText: context.l10n.workoutNameHint,
               ),
             ),
             const SizedBox(height: 16),
@@ -147,8 +239,8 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             GestureDetector(
               onTap: _pickDate,
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Datum',
+                decoration: InputDecoration(
+                  labelText: context.l10n.dateLabel,
                 ),
                 child: Row(
                   children: [
@@ -168,8 +260,8 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             GestureDetector(
               onTap: _pickStartTime,
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Startzeit',
+                decoration: InputDecoration(
+                  labelText: context.l10n.startTime,
                 ),
                 child: Row(
                   children: [
@@ -186,7 +278,7 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             const SizedBox(height: 16),
 
             // Duration
-            Text('Dauer: $_durationMinutes Minuten',
+            Text(context.l10n.durationMinutes(_durationMinutes),
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             Slider(
               value: _durationMinutes.toDouble(),
@@ -201,7 +293,9 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
             const SizedBox(height: 12),
 
             Text(
-              'Du kannst nach dem Anlegen Übungen und Sets über den Edit-Modus hinzufügen.',
+              _selectedPlanId != null
+                  ? context.l10n.planExercisesAutoImport
+                  : context.l10n.manualExercisesAddLater,
               style: TextStyle(color: c.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 20),
@@ -223,10 +317,10 @@ class _ManualWorkoutSheetState extends ConsumerState<ManualWorkoutSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
-                      'Training anlegen',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  : Text(
+                      context.l10n.createWorkout,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 16),
                     ),
             ),
           ],

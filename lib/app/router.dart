@@ -16,12 +16,16 @@ import '../services/plan_sharing_service.dart';
 import '../features/progress/progress_tab.dart';
 import '../features/progress/exercise_progress_screen.dart';
 import '../features/settings/settings_tab.dart';
+import '../features/settings/legal_screen.dart';
 import '../features/settings/remove_ads_screen.dart';
 import '../providers/settings_providers.dart';
 import '../shared/design_system.dart';
 import '../shared/widgets/ad_banner.dart';
+import '../shared/widgets/tap_scale.dart';
+import '../l10n/l10n_helper.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+SharedPlan? _pendingPlan;
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Notifier that triggers router redirect re-evaluation when settings change.
@@ -35,6 +39,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/workout',
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
+      // Handle ironrep:// deep links — redirect to import-plan route
+      final fullUri = state.uri.toString();
+      if (fullUri.startsWith('ironrep://plan/')) {
+        final data = fullUri.substring('ironrep://plan/'.length);
+        final plan = PlanSharingService.decodePlan(data);
+        if (plan != null) {
+          // Store plan in a static field for the import screen to pick up
+          _pendingPlan = plan;
+          return '/import-plan-pending';
+        }
+        return '/workout';
+      }
+
       final loaded = ref.read(settingsLoadedProvider);
       if (!loaded) return null; // Still loading — don't redirect yet.
 
@@ -158,9 +175,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/import-plan-pending',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final plan = _pendingPlan;
+          _pendingPlan = null;
+          if (plan == null) {
+            return Scaffold(
+              body: Center(child: Text(context.l10n.noPlanFound)),
+            );
+          }
+          return PlanImportScreen(plan: plan);
+        },
+      ),
+      GoRoute(
         path: '/remove-ads',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RemoveAdsScreen(),
+      ),
+      GoRoute(
+        path: '/licenses',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LicensesScreen(),
       ),
     ],
   );
@@ -183,7 +219,7 @@ class MainShell extends StatelessWidget {
         children: [
           const AdBannerWidget(),
           Container(
-            margin: const EdgeInsets.fromLTRB(60, 8, 60, 24),
+            margin: const EdgeInsets.fromLTRB(32, 8, 32, 24),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: c.card,
@@ -193,10 +229,10 @@ class MainShell extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavIcon(Icons.play_arrow_outlined, Icons.play_arrow, 0, 'Workout', navigationShell, c),
-                _NavIcon(Icons.calendar_month_outlined, Icons.calendar_month, 1, 'Aktivität', navigationShell, c),
-                _NavIcon(Icons.insights_outlined, Icons.insights, 2, 'Fortschritt', navigationShell, c),
-                _NavIcon(Icons.tune_outlined, Icons.tune, 3, 'Settings', navigationShell, c),
+                _NavIcon(Icons.fitness_center_outlined, Icons.fitness_center, 0, context.l10n.navWorkout, navigationShell, c),
+                _NavIcon(Icons.calendar_month_outlined, Icons.calendar_month, 1, context.l10n.navActivity, navigationShell, c),
+                _NavIcon(Icons.insights_outlined, Icons.insights, 2, context.l10n.navProgress, navigationShell, c),
+                _NavIcon(Icons.tune_outlined, Icons.tune, 3, context.l10n.navMore, navigationShell, c),
               ],
             ),
           ),
@@ -219,9 +255,8 @@ class _NavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = shell.currentIndex == index;
-    return GestureDetector(
+    return TapScale(
       onTap: () => shell.goBranch(index, initialLocation: index == shell.currentIndex),
-      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
@@ -258,3 +293,4 @@ class _NavIcon extends StatelessWidget {
     );
   }
 }
+

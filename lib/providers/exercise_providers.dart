@@ -45,12 +45,9 @@ final exerciseWithEquipmentProvider =
       (m) => m.name == exercise.primaryMuscleGroup,
       orElse: () => MuscleGroup.chest,
     ),
-    category: ExerciseCategory.values.firstWhere(
-      (c) => c.name == exercise.category,
-      orElse: () => ExerciseCategory.compound,
-    ),
     isCustom: exercise.isCustom,
     trackWeight: exercise.trackWeight,
+    imagePath: exercise.imagePath,
     equipment: equipment
         .map((e) => EquipmentType.values.firstWhere(
               (eq) => eq.name == e.equipmentType,

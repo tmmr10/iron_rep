@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 const _kRemoveAdsId = 'remove_ads';
@@ -31,12 +32,17 @@ class PurchaseService {
 
   void _onPurchaseUpdate(List<PurchaseDetails> purchases) {
     for (final purchase in purchases) {
+      debugPrint('>>> IAP update: ${purchase.productID} status=${purchase.status}');
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
+        if (purchase.productID == _kRemoveAdsId) {
+          _onPurchased?.call();
+        }
+      } else if (purchase.status == PurchaseStatus.error) {
+        debugPrint('>>> IAP error: ${purchase.error?.message}');
+      }
       if (purchase.pendingCompletePurchase) {
         _iap.completePurchase(purchase);
-      }
-      if (purchase.productID == _kRemoveAdsId &&
-          purchase.status == PurchaseStatus.purchased) {
-        _onPurchased?.call();
       }
     }
   }

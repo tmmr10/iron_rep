@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/enum_labels.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../models/enums.dart';
 import '../../providers/exercise_providers.dart';
 import '../../shared/design_system.dart';
@@ -18,13 +20,14 @@ class ExercisesScreen extends ConsumerWidget {
     final muscleFilter = ref.watch(exerciseMuscleFilterProvider);
     final exercisesAsync = ref.watch(filteredExercisesProvider);
 
+    final l = context.l10n;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Übungen'),
+        title: const SizedBox.shrink(),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Neue Übung',
+          TextButton(
+            child: Text(l.addExercise),
             onPressed: () async {
               final result = await showModalBottomSheet<({int id, String name})>(
                 context: context,
@@ -50,22 +53,8 @@ class ExercisesScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Übung suchen...',
-                prefixIcon: Icon(Icons.search, color: c.textMuted),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: c.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: c.border.withValues(alpha: 0.5)),
-                ),
-                filled: true,
-                fillColor: c.card,
+                hintText: l.searchExercise,
+                prefixIcon: Icon(Icons.search),
               ),
               onChanged: (v) =>
                   ref.read(exerciseSearchQueryProvider.notifier).state = v,
@@ -95,11 +84,11 @@ class ExercisesScreen extends ConsumerWidget {
                       border: Border.all(
                         color: muscleFilter == null
                             ? c.accent
-                            : c.border.withValues(alpha: 0.5),
+                            : c.border.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
-                      'Alle',
+                      l.all,
                       style: TextStyle(
                         color: muscleFilter == null
                             ? c.accent
@@ -138,8 +127,8 @@ class ExercisesScreen extends ConsumerWidget {
                   return Center(
                     child: Text(
                       searchQuery.isNotEmpty
-                          ? 'Keine Übungen gefunden'
-                          : 'Keine Übungen in dieser Kategorie',
+                          ? l.noExercisesFound
+                          : l.noExercisesInCategory,
                       style: TextStyle(color: c.textMuted),
                     ),
                   );
@@ -171,7 +160,7 @@ class ExercisesScreen extends ConsumerWidget {
                         ),
                       ),
                       subtitle: Text(
-                        muscle.label,
+                        muscle.localizedLabel(context),
                         style: TextStyle(color: c.textMuted, fontSize: 12),
                       ),
                       trailing: Icon(Icons.chevron_right,
@@ -184,7 +173,7 @@ class ExercisesScreen extends ConsumerWidget {
               },
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Fehler: $e')),
+              error: (e, _) => Center(child: Text(l.error('$e'))),
             ),
           ),
         ],

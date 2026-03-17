@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/l10n_helper.dart';
+
 import '../design_system.dart';
 
 class RepsStepper extends StatelessWidget {
@@ -59,7 +61,7 @@ class RepsStepper extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Wiederholungen',
+                    context.l10n.reps,
                     style: TextStyle(color: c.textSecondary, fontSize: 13),
                   ),
                 ],

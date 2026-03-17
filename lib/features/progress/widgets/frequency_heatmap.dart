@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/l10n_helper.dart';
 import '../../../providers/stats_providers.dart';
 import '../../../shared/design_system.dart';
 
@@ -22,7 +23,7 @@ class FrequencyHeatmap extends ConsumerWidget {
           return SizedBox(
             height: 100,
             child: Center(
-              child: Text('Noch keine Aktivität',
+              child: Text(context.l10n.noActivityYet,
                   style: TextStyle(color: c.textMuted)),
             ),
           );
@@ -107,7 +108,7 @@ class FrequencyHeatmap extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox(height: 100),
-      error: (e, _) => Text('Error: $e'),
+      error: (e, _) => Text(context.l10n.error('$e')),
     );
   }
 }

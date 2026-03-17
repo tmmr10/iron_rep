@@ -197,6 +197,11 @@ abstract class IronRepSpacing {
 }
 
 abstract class IronRepTheme {
+  /// Call once before runApp to prevent network font downloads on real devices.
+  static void init() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  }
+
   static ThemeData _buildTheme(AppColors colors, Brightness brightness) {
     final base = ThemeData(brightness: brightness);
     final spaceGrotesk = GoogleFonts.spaceGroteskTextTheme(base.textTheme);
@@ -269,17 +274,32 @@ abstract class IronRepTheme {
         filled: true,
         fillColor: colors.elevated,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.accent, width: 1.5),
+        ),
+        floatingLabelStyle: TextStyle(color: colors.accent, fontSize: 13),
+        labelStyle: TextStyle(color: colors.textMuted, fontSize: 14),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: TextStyle(color: colors.textMuted),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.all(Colors.transparent),
-          foregroundColor: WidgetStateProperty.all(Colors.black),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return Colors.black.withValues(alpha: 0.4);
+            }
+            return Colors.black;
+          }),
           elevation: WidgetStateProperty.all(0),
           shadowColor: WidgetStateProperty.all(colors.accent.withValues(alpha: 0.3)),
           shape: WidgetStateProperty.all(
@@ -292,38 +312,81 @@ abstract class IronRepTheme {
             const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           backgroundBuilder: (context, states, child) {
-            return Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colors.accentGradientStart, colors.accentGradientEnd],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.accent.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+            final isDisabled = states.contains(WidgetState.disabled);
+            final isPressed = states.contains(WidgetState.pressed);
+            return AnimatedOpacity(
+              opacity: isPressed ? 0.8 : 1.0,
+              duration: const Duration(milliseconds: 100),
+              child: AnimatedScale(
+                scale: isPressed ? 0.97 : 1.0,
+                duration: const Duration(milliseconds: 100),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDisabled
+                          ? [
+                              colors.accentGradientStart.withValues(alpha: 0.4),
+                              colors.accentGradientEnd.withValues(alpha: 0.4),
+                            ]
+                          : [colors.accentGradientStart, colors.accentGradientEnd],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: isDisabled
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: colors.accent.withValues(alpha: isPressed ? 0.1 : 0.2),
+                              blurRadius: isPressed ? 6 : 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                   ),
-                ],
+                  child: child,
+                ),
               ),
-              child: child,
             );
           },
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: colors.textSecondary,
-          side: BorderSide(color: colors.border, width: 1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colors.textMuted;
+            }
+            return colors.textSecondary;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return BorderSide(color: colors.accent, width: 1.5);
+            }
+            return BorderSide(color: colors.border, width: 1);
+          }),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+          overlayColor: WidgetStateProperty.all(
+            colors.accent.withValues(alpha: 0.08),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: colors.textSecondary,
+        style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colors.textMuted;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return colors.accent;
+            }
+            return colors.textSecondary;
+          }),
+          overlayColor: WidgetStateProperty.all(
+            colors.accent.withValues(alpha: 0.08),
+          ),
         ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(

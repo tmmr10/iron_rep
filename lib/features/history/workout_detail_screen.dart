@@ -8,6 +8,7 @@ import '../../providers/database_provider.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/iron_card.dart';
 import '../../shared/widgets/tap_scale.dart';
+import '../../l10n/l10n_helper.dart';
 import '../plans/exercise_picker_sheet.dart';
 
 class WorkoutDetailScreen extends ConsumerStatefulWidget {
@@ -87,18 +88,18 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: c.surface,
-          title: Text('Änderungen verwerfen?',
+          title: Text(context.l10n.discardChanges,
               style: TextStyle(color: c.textPrimary)),
-          content: Text('Deine Änderungen gehen verloren.',
+          content: Text(context.l10n.changesWillBeLost,
               style: TextStyle(color: c.textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Weiter bearbeiten'),
+              child: Text(context.l10n.continueEditing),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('Verwerfen', style: TextStyle(color: c.error)),
+              child: Text(context.l10n.discard, style: TextStyle(color: c.error)),
             ),
           ],
         ),
@@ -250,7 +251,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Workout Details')),
+        appBar: AppBar(title: const SizedBox.shrink()),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -261,6 +262,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     final duration = w.durationSeconds != null
         ? '${w.durationSeconds! ~/ 60}m ${w.durationSeconds! % 60}s'
         : '--';
+    final totalSets = detail.exercises
+        .where((ed) => !_deletedExerciseIds.contains(ed.workoutExerciseId))
+        .fold<int>(0, (sum, ed) => sum + ed.sets.length);
+    final totalVolume = detail.exercises
+        .where((ed) => !_deletedExerciseIds.contains(ed.workoutExerciseId))
+        .fold<double>(0, (sum, ed) => sum + ed.sets.fold<double>(
+            0, (s, set_) => s + (set_.weight ?? 0) * (set_.reps ?? 0)));
+    final exerciseCount = detail.exercises
+        .where((ed) => !_deletedExerciseIds.contains(ed.workoutExerciseId))
+        .length;
 
     return PopScope(
       canPop: !_isEditing || !_hasEditChanges,
@@ -270,23 +281,37 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       },
       child: Scaffold(
       appBar: AppBar(
-        title: const Text('Workout Details'),
+        title: const SizedBox.shrink(),
         actions: [
           if (!_isEditing)
             IconButton(
               icon: Icon(Icons.more_horiz, color: c.textSecondary),
               onPressed: () => _showOptions(context, c),
             )
-          else
+          else ...[
+            TextButton(
+              onPressed: () => _saveEdits(),
+              child: Text(
+                context.l10n.save,
+                style: TextStyle(
+                  color: c.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
             TextButton(
               onPressed: _cancelEditing,
-              child: const Text('Abbrechen'),
+              child: Text(
+                context.l10n.cancel,
+                style: TextStyle(color: c.textMuted),
+              ),
             ),
+          ],
         ],
       ),
       floatingActionButton: _isEditing
           ? Padding(
-              padding: const EdgeInsets.only(bottom: 72),
+              padding: const EdgeInsets.only(bottom: 16),
               child: FloatingActionButton(
                 onPressed: _addExercise,
                 backgroundColor: c.accent,
@@ -302,13 +327,14 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             child: ListView(
               padding: IronRepSpacing.screenPadding,
               children: [
-          if (_isEditing)
+          if (_isEditing) ...[
             _GradientNameField(
               controller: _nameController,
               colors: c,
               hintText: 'Workout Name',
-            )
-          else
+            ),
+            const SizedBox(height: 4),
+          ] else ...[
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
                 colors: [c.accentGradientStart, c.accentGradientEnd],
@@ -324,11 +350,36 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
+          ],
           Text(
             '${w.startedAt.day}.${w.startedAt.month}.${w.startedAt.year} · $duration',
             style: TextStyle(color: c.textSecondary),
           ),
+          if (!_isEditing && totalSets > 0) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _StatChip(
+                  icon: Icons.fitness_center,
+                  label: '$exerciseCount ${context.l10n.exercises}',
+                  colors: c,
+                ),
+                const SizedBox(width: 8),
+                _StatChip(
+                  icon: Icons.repeat,
+                  label: '$totalSets ${context.l10n.sets}',
+                  colors: c,
+                ),
+                const SizedBox(width: 8),
+                _StatChip(
+                  icon: Icons.monitor_weight_outlined,
+                  label: '${totalVolume.round()} kg',
+                  colors: c,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: IronRepSpacing.xl),
 
           // Existing exercises
@@ -342,7 +393,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
           if (detail.skippedExerciseNames.isNotEmpty && !_isEditing) ...[
             const SizedBox(height: IronRepSpacing.sm),
             Text(
-              'Übersprungen',
+              context.l10n.skippedCapital,
               style: TextStyle(
                 color: c.textMuted,
                 fontSize: 13,
@@ -369,35 +420,6 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         ],
       ),
           ),
-          if (_isEditing)
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: TapScale(
-                  onTap: () => _saveEdits(),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: c.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.accent.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'Änderungen speichern',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     ),
@@ -416,74 +438,82 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: IronRepSpacing.md),
-      child: IronCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _isEditing
-                        ? null
-                        : () => context
-                            .push('/exercise-detail/${ed.exerciseId}'),
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            ed.exerciseName,
-                            style: TextStyle(
-                              color: c.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
+      child: _isEditing
+          ? IronCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          ed.exerciseName,
+                          style: TextStyle(
+                            color: c.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
                           ),
                         ),
-                        if (!_isEditing) ...[
-                          const SizedBox(width: 4),
-                          Icon(Icons.chevron_right,
-                              color: c.textMuted, size: 18),
-                        ],
-                      ],
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline,
+                            color: c.error, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _deletedExerciseIds.add(ed.workoutExerciseId);
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...visibleSets.map((s) => _buildEditableSetRow(c, s)),
+                  ...newSetsForExercise.map((ns) => _buildNewSetRow(c, ns)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          _addSetToExercise(ed.workoutExerciseId),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: Text(context.l10n.addSet),
+                      style: TextButton.styleFrom(
+                        foregroundColor: c.accent,
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
                   ),
-                ),
-                if (_isEditing)
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, color: c.error, size: 20),
-                    onPressed: () {
-                      setState(() {
-                        _deletedExerciseIds.add(ed.workoutExerciseId);
-                      });
-                    },
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ...visibleSets.map((s) => _isEditing
-                ? _buildEditableSetRow(c, s)
-                : _buildReadOnlySetRow(c, s)),
-            ...newSetsForExercise
-                .map((ns) => _buildNewSetRow(c, ns)),
-            if (_isEditing)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: TextButton.icon(
-                  onPressed: () =>
-                      _addSetToExercise(ed.workoutExerciseId),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Set hinzufügen'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: c.accent,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
+                ],
               ),
-          ],
-        ),
-      ),
+            )
+          : IronCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ed.exerciseName,
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (visibleSets.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ...visibleSets.map((s) => _buildReadOnlySetRow(c, s)),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Noch keine Sets',
+                      style: TextStyle(
+                        color: c.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 
@@ -528,7 +558,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
               child: TextButton.icon(
                 onPressed: () => _addSetToNewExercise(ne.id),
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Set hinzufügen'),
+                label: Text(context.l10n.addSet),
                 style: TextButton.styleFrom(
                   foregroundColor: c.accent,
                   visualDensity: VisualDensity.compact,
@@ -578,25 +608,47 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       key: ValueKey('set_${s.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: c.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        color: c.error.withValues(alpha: 0.2),
-        child: Icon(Icons.delete, color: c.error),
+        child: Icon(Icons.delete_outline, color: c.error, size: 20),
       ),
       onDismissed: (_) {
         setState(() => _deletedSetIds.add(s.id));
       },
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: c.elevated,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.border.withValues(alpha: 0.2)),
+        ),
         child: Row(
           children: [
-            SizedBox(
-              width: 30,
-              child: Text('${s.setNumber}',
-                  style: TextStyle(color: c.textMuted)),
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: c.accent.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '${s.setNumber}',
+                style: TextStyle(
+                  color: c.accent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
-            SizedBox(
-              width: 80,
+            const SizedBox(width: 12),
+            Expanded(
               child: TextField(
                 controller: TextEditingController(
                     text: weight?.toStringAsFixed(1) ?? ''),
@@ -607,13 +659,18 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
+                  hintText: '0.0',
+                  hintStyle: TextStyle(color: c.textMuted),
                   suffixText: 'kg',
-                  suffixStyle:
-                      TextStyle(color: c.textMuted, fontSize: 12),
+                  suffixStyle: TextStyle(color: c.textMuted, fontSize: 12),
                 ),
-                style: TextStyle(color: c.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 onChanged: (v) {
                   _editedSets[s.id] = (_editedSets[s.id] ?? _EditedSet())
                       .copyWith(weight: double.tryParse(v));
@@ -622,10 +679,15 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('×', style: TextStyle(color: c.textMuted)),
+              child: Text('×',
+                  style: TextStyle(
+                    color: c.textMuted,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  )),
             ),
             SizedBox(
-              width: 60,
+              width: 56,
               child: TextField(
                 controller:
                     TextEditingController(text: reps?.toString() ?? ''),
@@ -633,12 +695,18 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
+                  hintText: '0',
+                  hintStyle: TextStyle(color: c.textMuted),
                 ),
-                style: TextStyle(color: c.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 onChanged: (v) {
                   _editedSets[s.id] = (_editedSets[s.id] ?? _EditedSet())
                       .copyWith(reps: int.tryParse(v));
@@ -646,19 +714,30 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
+            TapScale(
               onTap: () {
                 setState(() {
                   _editedSets[s.id] = (_editedSets[s.id] ?? _EditedSet())
                       .copyWith(isCompleted: !isCompleted);
                 });
               },
-              child: Icon(
-                isCompleted
-                    ? Icons.check_circle
-                    : Icons.check_circle_outline,
-                color: isCompleted ? c.success : c.textMuted,
-                size: 22,
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isCompleted
+                      ? c.success.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isCompleted
+                      ? Icons.check_circle
+                      : Icons.check_circle_outline,
+                  color: isCompleted ? c.success : c.textMuted,
+                  size: 22,
+                ),
               ),
             ),
           ],
@@ -672,24 +751,40 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       key: ValueKey('new_set_${ns.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: c.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        color: c.error.withValues(alpha: 0.2),
-        child: Icon(Icons.delete, color: c.error),
+        child: Icon(Icons.delete_outline, color: c.error, size: 20),
       ),
       onDismissed: (_) {
         setState(() => _newSets.remove(ns));
       },
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: c.elevated,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.accent.withValues(alpha: 0.2)),
+        ),
         child: Row(
           children: [
-            SizedBox(
-              width: 30,
-              child: Icon(Icons.add, color: c.accent, size: 14),
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: c.accent.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.add, color: c.accent, size: 16),
             ),
-            SizedBox(
-              width: 80,
+            const SizedBox(width: 12),
+            Expanded(
               child: TextField(
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
@@ -698,35 +793,49 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
                   hintText: '0.0',
+                  hintStyle: TextStyle(color: c.textMuted),
                   suffixText: 'kg',
-                  suffixStyle:
-                      TextStyle(color: c.textMuted, fontSize: 12),
+                  suffixStyle: TextStyle(color: c.textMuted, fontSize: 12),
                 ),
-                style: TextStyle(color: c.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 onChanged: (v) => ns.weight = double.tryParse(v),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('×', style: TextStyle(color: c.textMuted)),
+              child: Text('×',
+                  style: TextStyle(
+                    color: c.textMuted,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  )),
             ),
             SizedBox(
-              width: 60,
+              width: 56,
               child: TextField(
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
                   hintText: '0',
+                  hintStyle: TextStyle(color: c.textMuted),
                 ),
-                style: TextStyle(color: c.textPrimary, fontSize: 14),
+                style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 onChanged: (v) => ns.reps = int.tryParse(v),
               ),
             ),
@@ -779,7 +888,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                       ),
                     ),
                     child: Text(
-                      'Bearbeiten',
+                      context.l10n.edit,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.accent,
@@ -806,7 +915,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                       ),
                     ),
                     child: Text(
-                      'Workout löschen',
+                      context.l10n.deleteWorkout,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: c.error,
@@ -830,19 +939,19 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Workout löschen?',
+        title: Text(context.l10n.deleteWorkoutConfirm,
             style: TextStyle(color: c.textPrimary)),
         content: Text(
-            'Das Workout und alle zugehörigen Daten werden unwiderruflich gelöscht.',
+            context.l10n.deleteWorkoutMessage,
             style: TextStyle(color: c.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Löschen', style: TextStyle(color: c.error)),
+            child: Text(context.l10n.delete, style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -949,6 +1058,44 @@ Future<_WorkoutDetail> _loadWorkoutDetail(
   }
 
   return _WorkoutDetail(workout, exercises, skippedNames);
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final AppColors colors;
+
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.elevated,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colors.textMuted, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GradientNameField extends StatefulWidget {

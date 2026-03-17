@@ -11,7 +11,7 @@ enum MuscleGroup {
   hamstrings('Beinbeuger', Color(0xFF5DADE2), Icons.fitness_center),
   glutes('Gesäß', Color(0xFFF1948A), Icons.fitness_center),
   calves('Waden', Color(0xFF82E0AA), Icons.fitness_center),
-  core('Core', Color(0xFFAED6F1), Icons.fitness_center),
+  core('Bauch', Color(0xFFAED6F1), Icons.fitness_center),
   fullBody('Ganzkörper', Color(0xFFFF6B35), Icons.fitness_center),
   cardio('Ausdauer', Color(0xFFFF4757), Icons.directions_run);
 
@@ -38,7 +38,13 @@ enum EquipmentType {
   rowingMachine('Rudergerät', 'equipment_rowing_machine'),
   treadmill('Laufband', 'equipment_treadmill'),
   stationaryBike('Ergometer', 'equipment_stationary_bike'),
-  elliptical('Crosstrainer', 'equipment_elliptical');
+  elliptical('Crosstrainer', 'equipment_elliptical'),
+  bench('Flachbank', 'equipment_bench_press'),
+  inclineBench('Schrägbank', 'equipment_bench_press'),
+  dipStation('Dip-Station', null),
+  pullUpBar('Klimmzugstange', null),
+  hyperextensionBench('Hyperextension-Bank', null),
+  preacherCurlBench('Preacher-Curl-Bank', null);
 
   const EquipmentType(this.label, this.assetName);
   final String label;

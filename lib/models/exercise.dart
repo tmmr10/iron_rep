@@ -6,9 +6,9 @@ class ExerciseWithEquipment {
   final String nameKey;
   final String? instructions;
   final MuscleGroup muscleGroup;
-  final ExerciseCategory category;
   final bool isCustom;
   final bool trackWeight;
+  final String? imagePath;
   final List<EquipmentType> equipment;
 
   const ExerciseWithEquipment({
@@ -17,9 +17,9 @@ class ExerciseWithEquipment {
     required this.nameKey,
     this.instructions,
     required this.muscleGroup,
-    required this.category,
     required this.isCustom,
     this.trackWeight = true,
+    this.imagePath,
     required this.equipment,
   });
 

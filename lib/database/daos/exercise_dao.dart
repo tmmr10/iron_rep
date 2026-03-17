@@ -98,6 +98,18 @@ class ExerciseDao extends DatabaseAccessor<AppDatabase>
     }
   }
 
+  Future<void> updateExerciseImage(int id, String? path) async {
+    await (update(exercises)..where((t) => t.id.equals(id))).write(
+      ExercisesCompanion(imagePath: Value(path)),
+    );
+  }
+
+  Future<void> softDeleteExercise(int id) async {
+    await (update(exercises)..where((t) => t.id.equals(id))).write(
+      const ExercisesCompanion(isActive: Value(false)),
+    );
+  }
+
   Future<bool> hasExercises() async {
     final count = await (selectOnly(exercises)
           ..addColumns([exercises.id.count()]))

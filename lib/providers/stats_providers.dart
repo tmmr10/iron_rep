@@ -82,10 +82,21 @@ final currentStreakProvider = FutureProvider<int>((ref) async {
   return streak;
 });
 
-final totalPRsProvider = FutureProvider<int>((ref) async {
+final avgWorkoutDurationProvider = FutureProvider<int>((ref) async {
   final db = ref.watch(databaseProvider);
   final result = await db.customSelect(
-    'SELECT COUNT(*) AS cnt FROM personal_records',
+    'SELECT AVG(duration_seconds) AS avg_dur FROM workouts '
+    'WHERE completed_at IS NOT NULL AND duration_seconds IS NOT NULL AND duration_seconds > 0',
+  ).getSingle();
+  return (result.readNullable<double>('avg_dur') ?? 0).round();
+});
+
+final totalPRsProvider = FutureProvider<int>((ref) async {
+  final db = ref.watch(databaseProvider);
+  final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+  final result = await db.customSelect(
+    'SELECT COUNT(*) AS cnt FROM personal_records WHERE achieved_at >= ?',
+    variables: [Variable.withDateTime(thirtyDaysAgo)],
   ).getSingle();
   return result.read<int>('cnt');
 });

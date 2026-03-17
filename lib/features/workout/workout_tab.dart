@@ -11,6 +11,7 @@ import '../../providers/settings_providers.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
+import '../../l10n/l10n_helper.dart';
 import '../../shared/widgets/section_header.dart';
 import '../../shared/widgets/tap_scale.dart';
 
@@ -25,63 +26,129 @@ class WorkoutTab extends ConsumerWidget {
     final streak = ref.watch(currentStreakProvider);
     final totalWorkouts = ref.watch(totalWorkoutsProvider);
     final workoutsThisWeek = ref.watch(workoutsThisWeekProvider);
+    final totalVolume = ref.watch(totalVolumeProvider);
+    final avgDuration = ref.watch(avgWorkoutDurationProvider);
     final c = AppColors.of(context);
 
     final hour = DateTime.now().hour;
     final greetingPrefix = hour < 11
-        ? 'Guten Morgen'
+        ? context.l10n.greetingMorning
         : hour < 17
-            ? 'Guten Tag'
-            : 'Guten Abend';
-    final greeting = userName != null && userName.isNotEmpty
-        ? '$greetingPrefix, $userName!'
-        : '$greetingPrefix!';
+            ? context.l10n.greetingAfternoon
+            : context.l10n.greetingEvening;
+    final hasName = userName != null && userName.isNotEmpty;
+
+    final weekCount = workoutsThisWeek.valueOrNull ?? 0;
+    final streakVal = streak.valueOrNull ?? 0;
+    final subline = _motivationalSubline(context, hour, weekCount, streakVal);
 
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 20,
-        toolbarHeight: 72,
-        title: Text(
-          greeting,
-          style: TextStyle(
-            color: c.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: plansAsync.when(
-          data: (plans) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              children: [
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '$greetingPrefix${hasName ? ', ' : ''}',
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (hasName)
+                        ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [c.accentGradientStart, c.accentGradientEnd],
+                          ).createShader(bounds),
+                          child: Text(
+                            userName!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subline,
+                    style: TextStyle(
+                      color: c.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: plansAsync.when(
+                data: (plans) {
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                    children: [
+                SectionHeader(title: context.l10n.yourStats),
                 Row(
                   children: [
                     _StatCard(
-                      label: 'Streak',
+                      label: context.l10n.streak,
                       value: '${streak.valueOrNull ?? 0}W',
                       icon: Icons.local_fire_department_outlined,
                       iconColor: c.statIconColor,
                     ),
                     const SizedBox(width: IronRepSpacing.sm),
                     _StatCard(
-                      label: 'Workouts',
+                      label: context.l10n.workouts,
                       value: totalWorkouts.valueOrNull?.toString() ?? '0',
                       icon: Icons.fitness_center,
                       iconColor: c.statIconColor,
                     ),
                     const SizedBox(width: IronRepSpacing.sm),
                     _StatCard(
-                      label: 'Diese Woche',
+                      label: context.l10n.thisWeek,
                       value: workoutsThisWeek.valueOrNull?.toString() ?? '0',
                       icon: Icons.trending_up,
                       iconColor: c.statIconColor,
                     ),
                   ],
                 ),
+                const SizedBox(height: IronRepSpacing.sm),
+                Row(
+                  children: [
+                    _StatCard(
+                      label: context.l10n.volume,
+                      value: _formatVolume(totalVolume.valueOrNull ?? 0),
+                      icon: Icons.monitor_weight_outlined,
+                      iconColor: c.statIconColor,
+                    ),
+                    const SizedBox(width: IronRepSpacing.sm),
+                    _StatCard(
+                      label: context.l10n.avgDuration,
+                      value: _formatDuration(avgDuration.valueOrNull ?? 0),
+                      icon: Icons.timer_outlined,
+                      iconColor: c.statIconColor,
+                    ),
+                    const SizedBox(width: IronRepSpacing.sm),
+                    _StatCard(
+                      label: context.l10n.prs,
+                      value: ref.watch(totalPRsProvider).valueOrNull?.toString() ?? '0',
+                      icon: Icons.emoji_events_outlined,
+                      iconColor: c.statIconColor,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
-                SectionHeader(title: 'Deine Workouts'),
-                const SizedBox(height: 16),
+                SectionHeader(title: context.l10n.yourWorkouts),
                 if (activeWorkout.isActive) ...[
                   _ResumeCard(
                     planName: activeWorkout.planName,
@@ -116,7 +183,7 @@ class WorkoutTab extends ConsumerWidget {
                             color: c.textMuted, size: 40),
                         const SizedBox(height: 16),
                         Text(
-                          'Erstelle deinen ersten Trainingsplan',
+                          context.l10n.createFirstPlanTitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: c.textPrimary,
@@ -126,7 +193,7 @@ class WorkoutTab extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Wähle deine Übungen, lege die Sets fest und starte dein Training.',
+                          context.l10n.createFirstPlanSubtitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: c.textSecondary,
@@ -152,7 +219,7 @@ class WorkoutTab extends ConsumerWidget {
                                 Icon(Icons.add, color: c.accent, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Plan erstellen',
+                                  context.l10n.createPlan,
                                   style: TextStyle(
                                     color: c.accent,
                                     fontWeight: FontWeight.w600,
@@ -201,29 +268,28 @@ class WorkoutTab extends ConsumerWidget {
                           strokeAlign: BorderSide.strokeAlignInside,
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add, color: c.textMuted, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Neuer Plan',
-                            style: TextStyle(
-                              color: c.textMuted,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
+                      child: Center(
+                        child: Text(
+                          context.l10n.newPlan,
+                          style: TextStyle(
+                            color: c.textMuted,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ],
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Fehler: $e')),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text(context.l10n.error(e.toString()))),
+                ),
+              ),
+            ],
+          ),
         ),
     );
   }
@@ -257,6 +323,95 @@ class WorkoutTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatVolume(double volume) {
+  if (volume >= 1000000) return '${(volume / 1000000).toStringAsFixed(1)}M';
+  if (volume >= 1000) return '${(volume / 1000).toStringAsFixed(1)}k';
+  return volume.round().toString();
+}
+
+String _formatDuration(int seconds) {
+  if (seconds <= 0) return '--';
+  final minutes = seconds ~/ 60;
+  return '${minutes}m';
+}
+
+String _motivationalSubline(BuildContext context, int hour, int weekCount, int streakWeeks) {
+  final l = context.l10n;
+  // Use day-of-year as seed for daily rotation
+  final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
+
+  // --- Streak-based (highest priority) ---
+  if (streakWeeks >= 4) {
+    final lines = [
+      l.motivationStrongStreak1,
+      l.streakWeeksMotivation(streakWeeks),
+      l.motivationStrongStreak3,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+  if (streakWeeks >= 2) {
+    final lines = [
+      l.motivationStreakRunning1,
+      l.motivationStreakRunning2,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+
+  // --- Week progress based ---
+  if (weekCount >= 4) {
+    final lines = [
+      l.motivationWeekGreat1,
+      l.motivationWeekGreat2,
+      l.motivationWeekGreat3,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+  if (weekCount >= 2) {
+    final lines = [
+      l.workoutsThisWeekMotivation(weekCount),
+      l.motivationWeekGood1,
+      l.motivationWeekGood2,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+  if (weekCount == 1) {
+    final lines = [
+      l.motivationWeekOne1,
+      l.motivationWeekOne2,
+      l.motivationWeekOne3,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+
+  // --- No workouts this week, by time of day ---
+  if (hour < 11) {
+    final lines = [
+      l.motivationMorning1,
+      l.motivationMorning2,
+      l.motivationMorning3,
+      l.motivationMorning4,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+  if (hour < 17) {
+    final lines = [
+      l.motivationDay1,
+      l.motivationDay2,
+      l.motivationDay3,
+      l.motivationDay4,
+    ];
+    return lines[dayOfYear % lines.length];
+  }
+  // Evening
+  final lines = [
+    l.motivationEvening1,
+    l.motivationEvening2,
+    l.motivationEvening3,
+    l.motivationEvening4,
+  ];
+  return lines[dayOfYear % lines.length];
 }
 
 class _ResumeCard extends StatelessWidget {
@@ -331,7 +486,7 @@ class _ResumeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    planName ?? 'Training',
+                    planName ?? context.l10n.training,
                     style: TextStyle(
                       color: c.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -350,7 +505,7 @@ class _ResumeCard extends StatelessWidget {
                       ),
                       if (isPaused)
                         Text(
-                          ' \u00b7 Pausiert',
+                          ' \u00b7 ${context.l10n.paused}',
                           style: TextStyle(
                             color: c.warning,
                             fontSize: 14,
@@ -359,7 +514,7 @@ class _ResumeCard extends StatelessWidget {
                         )
                       else
                         Text(
-                          ' \u00b7 Tippe zum Fortsetzen',
+                          ' \u00b7 ${context.l10n.tapToResume}',
                           style: TextStyle(
                             color: c.textMuted,
                             fontSize: 14,
@@ -378,16 +533,17 @@ class _ResumeCard extends StatelessWidget {
   }
 }
 
-String _timeAgo(DateTime date) {
+String _timeAgo(BuildContext context, DateTime date) {
+  final l = context.l10n;
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final dateDay = DateTime(date.year, date.month, date.day);
   final days = today.difference(dateDay).inDays;
-  if (days == 0) return 'heute';
-  if (days == 1) return 'gestern';
-  if (days <= 6) return 'vor $days Tagen';
-  if (days <= 27) return 'vor ${days ~/ 7} Wochen';
-  return 'vor ${days ~/ 30} Monaten';
+  if (days == 0) return l.timeAgoToday;
+  if (days == 1) return l.timeAgoYesterday;
+  if (days <= 6) return l.timeAgoDays(days);
+  if (days <= 27) return l.timeAgoWeeks(days ~/ 7);
+  return l.timeAgoMonths(days ~/ 30);
 }
 
 class _PlanCard extends ConsumerWidget {
@@ -441,7 +597,7 @@ class _PlanCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$exerciseCount Übungen · $totalSets Sets',
+                    context.l10n.exercisesCount(exerciseCount, totalSets),
                     style: TextStyle(
                       color: c.textSecondary,
                       fontSize: 13,
@@ -452,12 +608,12 @@ class _PlanCard extends ConsumerWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: 'Zuletzt ${_timeAgo(lastWorkout)}'),
+                          TextSpan(text: context.l10n.lastWorkout(_timeAgo(context, lastWorkout))),
                           if (completion != null &&
                               completion.done < completion.planned)
                             TextSpan(
                               text:
-                                  ' · ${completion.done}/${completion.planned} Übungen',
+                                  ' · ${context.l10n.completionOfPlanned(completion.done, completion.planned)}',
                               style: TextStyle(color: c.warning),
                             ),
                         ],
@@ -476,16 +632,16 @@ class _PlanCard extends ConsumerWidget {
               child: Opacity(
                 opacity: isDisabled ? 0.4 : 1.0,
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: c.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    color: c.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.play_arrow_rounded,
                     color: c.accent,
-                    size: 20,
+                    size: 26,
                   ),
                 ),
               ),
@@ -560,7 +716,7 @@ class _PlanDetailSheet extends ConsumerWidget {
                   TextButton(
                     onPressed: onEdit,
                     child: Text(
-                      'Bearbeiten',
+                      context.l10n.edit,
                       style: TextStyle(
                         color: c.accent,
                         fontWeight: FontWeight.w500,
@@ -575,9 +731,9 @@ class _PlanDetailSheet extends ConsumerWidget {
               Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: '${exercises.length} Übungen · $totalSets Sets'),
+                    TextSpan(text: context.l10n.exercisesCount(exercises.length, totalSets)),
                     if (lastWorkout != null)
-                      TextSpan(text: ' · Zuletzt ${_timeAgo(lastWorkout)}'),
+                      TextSpan(text: ' · ${context.l10n.lastWorkout(_timeAgo(context, lastWorkout))}'),
                     if (completion != null &&
                         completion.done < completion.planned)
                       TextSpan(
@@ -622,7 +778,7 @@ class _PlanDetailSheet extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '${e.targetSets} Sets',
+                            context.l10n.setsLabel(e.targetSets),
                             style: TextStyle(
                               color: c.textMuted,
                               fontSize: 13,
@@ -654,7 +810,7 @@ class _PlanDetailSheet extends ConsumerWidget {
                             color: c.accent, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Training starten',
+                          context.l10n.startTraining,
                           style: TextStyle(
                             color: c.accent,
                             fontWeight: FontWeight.w600,
@@ -693,35 +849,31 @@ class _StatCard extends StatelessWidget {
 
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(16),
+          color: c.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: c.border.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: iconColor, size: 18),
-            const SizedBox(height: 6),
-            ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [c.accentGradientStart, c.accentGradientEnd],
-              ).createShader(bounds),
-              child: Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
+            Icon(icon, color: iconColor.withValues(alpha: 0.7), size: 14),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: c.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                color: c.textSecondary,
-                fontSize: 12,
+                color: c.textMuted,
+                fontSize: 10,
               ),
             ),
           ],

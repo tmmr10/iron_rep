@@ -9,6 +9,7 @@ class Exercises extends Table {
   TextColumn get category => text()();
   BoolColumn get trackWeight => boolean().withDefault(const Constant(true))();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
+  TextColumn get imagePath => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();

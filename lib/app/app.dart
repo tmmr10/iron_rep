@@ -1,7 +1,9 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/settings_providers.dart';
 import '../services/plan_sharing_service.dart';
 import '../shared/design_system.dart';
@@ -33,6 +35,7 @@ class IronRepApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
     final router = ref.watch(routerProvider);
     ref.watch(_deepLinkProvider);
 
@@ -41,8 +44,16 @@ class IronRepApp extends ConsumerWidget {
       theme: IronRepTheme.lightTheme,
       darkTheme: IronRepTheme.darkTheme,
       themeMode: themeMode,
+      locale: locale,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }

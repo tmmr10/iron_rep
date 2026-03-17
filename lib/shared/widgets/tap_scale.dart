@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class TapScale extends StatefulWidget {
   final Widget child;
@@ -19,11 +20,20 @@ class _TapScaleState extends State<TapScale> {
       onTapDown: widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
       onTapUp: widget.onTap != null ? (_) => setState(() => _pressed = false) : null,
       onTapCancel: widget.onTap != null ? () => setState(() => _pressed = false) : null,
-      onTap: widget.onTap,
+      onTap: widget.onTap != null
+          ? () {
+              HapticFeedback.lightImpact();
+              widget.onTap!();
+            }
+          : null,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 120),
-        child: widget.child,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.7 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          child: widget.child,
+        ),
       ),
     );
   }
