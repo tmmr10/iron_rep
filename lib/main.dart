@@ -8,7 +8,7 @@ import 'app/app.dart';
 import 'database/app_database.dart';
 import 'database/seed/exercise_seed_data.dart';
 import 'database/seed/plan_seed_data.dart';
-import 'database/seed/workout_history_seed.dart';
+// WorkoutHistorySeed removed — users start with a clean slate
 import 'shared/design_system.dart';
 import 'services/ad_service.dart';
 import 'services/timer_service.dart';
@@ -30,7 +30,6 @@ void main() async {
     await ExerciseSeedData.seed(db, locale: systemLocale);
     await ExerciseSeedData.seedMissing(db, locale: systemLocale);
     await PlanSeedData.seed(db);
-    await WorkoutHistorySeed.seed(db);
   } catch (_) {}
 
   try {

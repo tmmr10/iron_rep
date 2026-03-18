@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../database/app_database.dart';
 import '../../providers/plan_providers.dart';
-import '../../services/plan_sharing_service.dart';
 import '../../providers/settings_providers.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/workout_providers.dart';
+import '../../services/timer_service.dart';
 import '../../shared/design_system.dart';
 import '../../l10n/l10n_helper.dart';
 import '../../shared/widgets/section_header.dart';
@@ -69,7 +68,7 @@ class WorkoutTab extends ConsumerWidget {
                             colors: [c.accentGradientStart, c.accentGradientEnd],
                           ).createShader(bounds),
                           child: Text(
-                            userName!,
+                            userName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 22,
@@ -98,54 +97,66 @@ class WorkoutTab extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
                     children: [
                 SectionHeader(title: context.l10n.yourStats),
-                Row(
-                  children: [
-                    _StatCard(
-                      label: context.l10n.streak,
-                      value: '${streak.valueOrNull ?? 0}W',
-                      icon: Icons.local_fire_department_outlined,
-                      iconColor: c.statIconColor,
-                    ),
-                    const SizedBox(width: IronRepSpacing.sm),
-                    _StatCard(
-                      label: context.l10n.workouts,
-                      value: totalWorkouts.valueOrNull?.toString() ?? '0',
-                      icon: Icons.fitness_center,
-                      iconColor: c.statIconColor,
-                    ),
-                    const SizedBox(width: IronRepSpacing.sm),
-                    _StatCard(
-                      label: context.l10n.thisWeek,
-                      value: workoutsThisWeek.valueOrNull?.toString() ?? '0',
-                      icon: Icons.trending_up,
-                      iconColor: c.statIconColor,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: IronRepSpacing.sm),
-                Row(
-                  children: [
-                    _StatCard(
-                      label: context.l10n.volume,
-                      value: _formatVolume(totalVolume.valueOrNull ?? 0),
-                      icon: Icons.monitor_weight_outlined,
-                      iconColor: c.statIconColor,
-                    ),
-                    const SizedBox(width: IronRepSpacing.sm),
-                    _StatCard(
-                      label: context.l10n.avgDuration,
-                      value: _formatDuration(avgDuration.valueOrNull ?? 0),
-                      icon: Icons.timer_outlined,
-                      iconColor: c.statIconColor,
-                    ),
-                    const SizedBox(width: IronRepSpacing.sm),
-                    _StatCard(
-                      label: context.l10n.prs,
-                      value: ref.watch(totalPRsProvider).valueOrNull?.toString() ?? '0',
-                      icon: Icons.emoji_events_outlined,
-                      iconColor: c.statIconColor,
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(IronRepSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: c.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: c.border.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          _StatCard(
+                            label: context.l10n.streak,
+                            value: '${streak.valueOrNull ?? 0}W',
+                            icon: Icons.local_fire_department_outlined,
+                            iconColor: c.statIconColor,
+                          ),
+                          const SizedBox(width: IronRepSpacing.sm),
+                          _StatCard(
+                            label: context.l10n.workouts,
+                            value: totalWorkouts.valueOrNull?.toString() ?? '0',
+                            icon: Icons.fitness_center,
+                            iconColor: c.statIconColor,
+                          ),
+                          const SizedBox(width: IronRepSpacing.sm),
+                          _StatCard(
+                            label: context.l10n.thisWeek,
+                            value: workoutsThisWeek.valueOrNull?.toString() ?? '0',
+                            icon: Icons.trending_up,
+                            iconColor: c.statIconColor,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: IronRepSpacing.sm),
+                      Row(
+                        children: [
+                          _StatCard(
+                            label: context.l10n.volume,
+                            value: _formatVolume(totalVolume.valueOrNull ?? 0),
+                            icon: Icons.monitor_weight_outlined,
+                            iconColor: c.statIconColor,
+                          ),
+                          const SizedBox(width: IronRepSpacing.sm),
+                          _StatCard(
+                            label: context.l10n.avgDuration,
+                            value: _formatDuration(avgDuration.valueOrNull ?? 0),
+                            icon: Icons.timer_outlined,
+                            iconColor: c.statIconColor,
+                          ),
+                          const SizedBox(width: IronRepSpacing.sm),
+                          _StatCard(
+                            label: context.l10n.prs,
+                            value: ref.watch(totalPRsProvider).valueOrNull?.toString() ?? '0',
+                            icon: Icons.emoji_events_outlined,
+                            iconColor: c.statIconColor,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SectionHeader(title: context.l10n.yourWorkouts),
@@ -296,6 +307,8 @@ class WorkoutTab extends ConsumerWidget {
 
   Future<void> _startPlan(
       BuildContext context, WidgetRef ref, TrainingPlan plan) async {
+    // Request notification permission early so it's ready for the rest timer
+    TimerService.ensurePermission();
     final notifier = ref.read(activeWorkoutProvider.notifier);
     await notifier.preparePlan(plan.id);
     await notifier.startWorkout(planId: plan.id);
@@ -850,11 +863,7 @@ class _StatCard extends StatelessWidget {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          color: c.background,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: c.border.withValues(alpha: 0.3)),
-        ),
+        decoration: const BoxDecoration(),
         child: Column(
           children: [
             Icon(icon, color: iconColor.withValues(alpha: 0.7), size: 14),

@@ -7,6 +7,7 @@ import '../../l10n/l10n_helper.dart';
 
 import '../../providers/purchase_providers.dart';
 import '../../services/ad_service.dart';
+import '../../utils/screenshot_tour.dart';
 
 class AdBannerWidget extends ConsumerStatefulWidget {
   const AdBannerWidget({super.key});
@@ -61,7 +62,8 @@ class _AdBannerWidgetState extends ConsumerState<AdBannerWidget> {
   @override
   Widget build(BuildContext context) {
     final adsRemoved = ref.watch(isAdsRemovedProvider).valueOrNull ?? false;
-    if (adsRemoved) return const SizedBox.shrink();
+    final screenshotMode = ref.watch(screenshotModeProvider);
+    if (adsRemoved || screenshotMode) return const SizedBox.shrink();
 
     // Real ad loaded — show it
     if (_isLoaded && _bannerAd != null) {

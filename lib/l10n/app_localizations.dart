@@ -1769,13 +1769,13 @@ abstract class AppLocalizations {
   /// No description provided for @backupExport.
   ///
   /// In de, this message translates to:
-  /// **'Daten exportieren'**
+  /// **'Export'**
   String get backupExport;
 
   /// No description provided for @backupImport.
   ///
   /// In de, this message translates to:
-  /// **'Daten importieren'**
+  /// **'Import'**
   String get backupImport;
 
   /// No description provided for @backupImportPreview.

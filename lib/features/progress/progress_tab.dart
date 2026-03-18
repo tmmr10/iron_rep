@@ -39,7 +39,7 @@ final trainedExercisesProvider = FutureProvider<
             id: row.read<int>('id'),
             name: row.read<String>('name'),
             muscleGroup: row.read<String>('primary_muscle_group'),
-            lastWeight: row.readNullable<double>('last_weight') ?? 0.0,
+            lastWeight: (row.data['last_weight'] as num?)?.toDouble() ?? 0.0,
           ))
       .toList();
 });

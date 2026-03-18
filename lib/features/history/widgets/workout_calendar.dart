@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../../../l10n/l10n_helper.dart';
 import '../../../models/workout_history_item.dart';
 import '../../../shared/design_system.dart';
 import '../../../shared/widgets/tap_scale.dart';
@@ -232,6 +233,30 @@ class _WorkoutCalendarState extends ConsumerState<WorkoutCalendar> {
                 padding: const EdgeInsets.only(bottom: IronRepSpacing.sm),
                 child: _CalendarWorkoutCard(workout: w),
               )),
+        ] else if (_selectedDay != null) ...[
+          const SizedBox(height: IronRepSpacing.lg),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.fitness_center_rounded,
+                    color: c.textMuted.withValues(alpha: 0.4),
+                    size: 32,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.noActivityYet,
+                    style: TextStyle(
+                      color: c.textMuted,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ],
     );

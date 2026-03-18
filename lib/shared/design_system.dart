@@ -54,8 +54,8 @@ class AppColors extends ThemeExtension<AppColors> {
     elevated: Color(0xFF1C1C22),
     border: Color(0xFF2A2A30),
     textPrimary: Color(0xFFF0F0F5),
-    textSecondary: Color(0xFF8E8E96),
-    textMuted: Color(0xFF48484F),
+    textSecondary: Color(0xFF9A9AA2),
+    textMuted: Color(0xFF6B6B73),
     accent: Color(0xFFCCFF00),       // Lime — vibrant accent
     accentDim: Color(0x20CCFF00),
     success: Color(0xFF34D399),      // Emerald-400

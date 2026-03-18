@@ -18,33 +18,46 @@ class ExerciseProgressDots extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (index) {
-        final isCurrent = index == currentIndex;
-        final isDone = index < currentIndex;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(total, (index) {
+          final isCurrent = index == currentIndex;
+          final isDone = index < currentIndex;
 
-        return GestureDetector(
-          onTap: onTap != null ? () => onTap!(index) : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isCurrent ? 24 : 10,
-            height: 10,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: BoxDecoration(
-              color: isDone
-                  ? c.success
-                  : isCurrent
-                      ? c.accent
-                      : Colors.transparent,
-              border: isDone || isCurrent
-                  ? null
-                  : Border.all(color: c.border, width: 1.5),
-              borderRadius: BorderRadius.circular(5),
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap != null ? () => onTap!(index) : null,
+            // Min 44px touch target per Apple HIG
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+              child: SizedBox(
+                width: isCurrent ? 28 : 16,
+                height: 28,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: isCurrent ? 28 : 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: isDone
+                          ? c.success
+                          : isCurrent
+                              ? c.accent
+                              : Colors.transparent,
+                      border: isDone || isCurrent
+                          ? null
+                          : Border.all(color: c.border, width: 1.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }

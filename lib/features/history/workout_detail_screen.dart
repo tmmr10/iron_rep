@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
@@ -57,6 +58,152 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  void _showWorkoutActions(
+    BuildContext context,
+    AppColors c,
+    _WorkoutDetail detail,
+    String duration,
+    int totalSets,
+    double totalVolume,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _shareWorkout(detail, duration, totalSets, totalVolume);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.ios_share, color: c.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.sharePlan,
+                          style: TextStyle(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDelete(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: c.error, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.delete,
+                          style: TextStyle(
+                            color: c.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _shareWorkout(
+    _WorkoutDetail detail,
+    String duration,
+    int totalSets,
+    double totalVolume,
+  ) async {
+    final w = detail.workout;
+    final name = w.name ?? 'Workout';
+    final date =
+        '${w.startedAt.day}.${w.startedAt.month}.${w.startedAt.year}';
+
+    final exerciseLines = detail.exercises.map((ed) {
+      final setLines = ed.sets.asMap().entries.map((entry) {
+        final i = entry.key + 1;
+        final s = entry.value;
+        final weight = s.weight != null ? '${s.weight} kg' : '-';
+        final reps = s.reps != null ? '${s.reps} reps' : '-';
+        return '   $i. $weight × $reps';
+      }).join('\n');
+      return '${ed.exerciseName}\n$setLines';
+    }).join('\n\n');
+
+    final message = '💪 $name\n'
+        '📅 $date · ⏱ $duration\n'
+        '🏋️ ${detail.exercises.length} ${context.l10n.exercises} · '
+        '$totalSets ${context.l10n.sets} · '
+        '${totalVolume.round()} kg\n\n'
+        '$exerciseLines';
+
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      message,
+      subject: '$name — IronRep',
+      sharePositionOrigin:
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
   }
 
   void _startEditing() {
@@ -294,15 +441,11 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () => _confirmDelete(context),
-              child: Text(
-                context.l10n.delete,
-                style: TextStyle(
-                  color: c.error,
-                  fontWeight: FontWeight.w600,
-                ),
+            IconButton(
+              onPressed: () => _showWorkoutActions(
+                context, c, detail, duration, totalSets, totalVolume,
               ),
+              icon: Icon(Icons.more_horiz, color: c.textPrimary, size: 24),
             ),
           ] else ...[
             TextButton(

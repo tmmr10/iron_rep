@@ -84,7 +84,7 @@ class _BackupImportScreenState extends ConsumerState<BackupImportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.l10n.backupImport),
+        title: const SizedBox.shrink(),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
@@ -381,7 +381,7 @@ class _BackupImportScreenState extends ConsumerState<BackupImportScreen> {
               : c.border.withValues(alpha: 0.3),
         ),
       ),
-      child: CheckboxListTile(
+      child: SwitchListTile(
         secondary: Icon(icon,
             color: enabled
                 ? (effectiveValue ? c.accent : c.textMuted)
@@ -399,7 +399,7 @@ class _BackupImportScreenState extends ConsumerState<BackupImportScreen> {
               fontSize: 16,
             )),
         value: effectiveValue,
-        onChanged: onChanged,
+        onChanged: onChanged != null ? (v) => onChanged(v) : null,
         activeColor: c.accent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),

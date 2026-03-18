@@ -420,8 +420,8 @@
   "reps": "Reps",
 
   "backupData": "Data",
-  "backupExport": "Export data",
-  "backupImport": "Import data",
+  "backupExport": "Export",
+  "backupImport": "Import",
   "backupImportPreview": "Backup preview",
   "backupExportedAt": "Exported on {date}",
   "@backupExportedAt": {

@@ -12,6 +12,7 @@ import '../../models/enums.dart';
 import '../../services/backup_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/section_header.dart';
+import '../../shared/widgets/tap_scale.dart';
 import '../../l10n/l10n_helper.dart';
 import '../../utils/screenshot_tour.dart';
 
@@ -30,125 +31,167 @@ class SettingsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
           children: [
             SectionHeader(title: context.l10n.settings),
-            _SettingsTile(
-              icon: Icons.person_outline,
-              title: context.l10n.name,
-              trailing: Text(
-                settings.userName ?? context.l10n.notSet,
-                style: TextStyle(
-                  color: settings.userName != null ? c.accent : c.textMuted,
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.person_outline,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.name,
+                  trailing: Text(
+                    settings.userName ?? context.l10n.notSet,
+                    style: TextStyle(
+                      color: settings.userName != null ? c.accent : c.textMuted,
+                    ),
+                  ),
+                  onTap: () => _showNameEditor(context, ref, settings.userName),
                 ),
-              ),
-              onTap: () => _showNameEditor(context, ref, settings.userName),
-            ),
-            _SettingsTile(
-              icon: Icons.straighten,
-              title: context.l10n.weightUnit,
-              trailing: Text(
-                settings.weightUnit.label,
-                style: TextStyle(color: c.accent),
-              ),
-              onTap: () => _showUnitPicker(context, ref, settings.weightUnit),
-            ),
-            _SettingsTile(
-              icon: Icons.timer,
-              title: context.l10n.defaultRestTime,
-              trailing: Text(
-                '${settings.defaultRestSeconds}s',
-                style: TextStyle(color: c.accent),
-              ),
-              onTap: () =>
-                  _showRestTimePicker(context, ref, settings.defaultRestSeconds),
+                _SettingsTile(
+                  icon: Icons.straighten,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.weightUnit,
+                  trailing: Text(
+                    settings.weightUnit.label,
+                    style: TextStyle(color: c.accent),
+                  ),
+                  onTap: () => _showUnitPicker(context, ref, settings.weightUnit),
+                ),
+                _SettingsTile(
+                  icon: Icons.timer,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.defaultRestTime,
+                  trailing: Text(
+                    '${settings.defaultRestSeconds}s',
+                    style: TextStyle(color: c.accent),
+                  ),
+                  onTap: () =>
+                      _showRestTimePicker(context, ref, settings.defaultRestSeconds),
+                ),
+              ],
             ),
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.appearance),
-            _SettingsTile(
-              icon: Icons.palette_outlined,
-              title: context.l10n.design,
-              trailing: Text(
-                _themeModeLabel(context, settings.themeMode),
-                style: TextStyle(color: c.accent),
-              ),
-              onTap: () => _showThemePicker(context, ref, settings.themeMode),
-            ),
-            _SettingsTile(
-              icon: Icons.language,
-              title: context.l10n.language,
-              trailing: Text(
-                _localeLabel(context, settings.localeOverride),
-                style: TextStyle(color: c.accent),
-              ),
-              onTap: () => _showLocalePicker(context, ref, settings.localeOverride),
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.palette_outlined,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.design,
+                  trailing: Text(
+                    _themeModeLabel(context, settings.themeMode),
+                    style: TextStyle(color: c.accent),
+                  ),
+                  onTap: () => _showThemePicker(context, ref, settings.themeMode),
+                ),
+                _SettingsTile(
+                  icon: Icons.language,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.language,
+                  trailing: Text(
+                    _localeLabel(context, settings.localeOverride),
+                    style: TextStyle(color: c.accent),
+                  ),
+                  onTap: () => _showLocalePicker(context, ref, settings.localeOverride),
+                ),
+              ],
             ),
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.plansAndExercises),
-            _SettingsTile(
-              icon: Icons.list_alt,
-              title: context.l10n.managePlans,
-              trailing: Icon(Icons.chevron_right,
-                  color: c.textMuted, size: 20),
-              onTap: () => _showManagePlans(context, ref),
-            ),
-            _SettingsTile(
-              icon: Icons.fitness_center,
-              title: context.l10n.manageExercises,
-              trailing: Icon(Icons.chevron_right,
-                  color: c.textMuted, size: 20),
-              onTap: () => context.push('/exercises'),
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.list_alt,
+                  iconColor: c.accent,
+                  title: context.l10n.managePlans,
+                  trailing: Icon(Icons.chevron_right,
+                      color: c.textMuted, size: 20),
+                  onTap: () => _showManagePlans(context, ref),
+                ),
+                _SettingsTile(
+                  icon: Icons.fitness_center,
+                  iconColor: c.accent,
+                  title: context.l10n.manageExercises,
+                  trailing: Icon(Icons.chevron_right,
+                      color: c.textMuted, size: 20),
+                  onTap: () => context.push('/exercises'),
+                ),
+              ],
             ),
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.backupData),
-            _SettingsTile(
-              icon: Icons.upload,
-              title: context.l10n.backupExport,
-              trailing: Icon(Icons.chevron_right,
-                  color: c.textMuted, size: 20),
-              onTap: () => context.push('/backup-export'),
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.upload,
+                  iconColor: c.accent,
+                  title: context.l10n.backupExport,
+                  trailing: Icon(Icons.chevron_right,
+                      color: c.textMuted, size: 20),
+                  onTap: () => context.push('/backup-export'),
+                ),
+                _SettingsTile(
+                  icon: Icons.download,
+                  iconColor: c.accent,
+                  title: context.l10n.backupImport,
+                  trailing: Icon(Icons.chevron_right,
+                      color: c.textMuted, size: 20),
+                  onTap: () => _importData(context),
+                ),
+              ],
             ),
-            _SettingsTile(
-              icon: Icons.download,
-              title: context.l10n.backupImport,
-              trailing: Icon(Icons.chevron_right,
-                  color: c.textMuted, size: 20),
-              onTap: () => _importData(context),
-            ),
+
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.pro),
-            _SettingsTile(
-              icon: Icons.block,
-              title: context.l10n.removeAds,
-              trailing: settings.adsRemoved
-                  ? Icon(Icons.check, color: c.success)
-                  : Text('€2.99',
-                      style: TextStyle(color: c.accent)),
-              onTap: settings.adsRemoved
-                  ? null
-                  : () => context.push('/remove-ads'),
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.block,
+                  iconColor: c.accent,
+                  title: context.l10n.removeAds,
+                  trailing: settings.adsRemoved
+                      ? Icon(Icons.check, color: c.success)
+                      : Text('€2.99',
+                          style: TextStyle(color: c.accent)),
+                  onTap: settings.adsRemoved
+                      ? null
+                      : () => context.push('/remove-ads'),
+                ),
+              ],
             ),
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.about),
-            _SettingsTile(
-              icon: Icons.info_outline,
-              title: context.l10n.version,
-              trailing: Text('1.0.0',
-                  style: TextStyle(color: c.textSecondary)),
-            ),
-            _SettingsTile(
-              icon: Icons.code,
-              title: context.l10n.openSourceLicenses,
-              trailing: Icon(Icons.chevron_right,
-                  color: c.textMuted, size: 20),
-              onTap: () => context.push('/licenses'),
+            _SettingsGroup(
+              tiles: [
+                _SettingsTile(
+                  icon: Icons.info_outline,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.version,
+                  trailing: Text('1.0.0',
+                      style: TextStyle(color: c.textSecondary)),
+                ),
+                _SettingsTile(
+                  icon: Icons.code,
+                  iconColor: c.textSecondary,
+                  title: context.l10n.openSourceLicenses,
+                  trailing: Icon(Icons.chevron_right,
+                      color: c.textMuted, size: 20),
+                  onTap: () => context.push('/licenses'),
+                ),
+              ],
             ),
             if (kDebugMode) ...[
               const SizedBox(height: IronRepSpacing.xl),
               SectionHeader(title: 'Debug'),
-              _SettingsTile(
-                icon: Icons.camera_alt,
-                title: 'Screenshot Tour',
-                trailing: Icon(Icons.play_arrow,
-                    color: c.accent, size: 20),
-                onTap: () => runScreenshotTour(context, ref),
+              _SettingsGroup(
+                tiles: [
+                  _SettingsTile(
+                    icon: Icons.camera_alt,
+                    iconColor: c.accent,
+                    title: 'Screenshot Tour',
+                    trailing: Icon(Icons.play_arrow,
+                        color: c.accent, size: 20),
+                    onTap: () => runScreenshotTour(context, ref),
+                  ),
+                ],
               ),
             ],
           ],
@@ -550,14 +593,49 @@ class SettingsTab extends ConsumerWidget {
   }
 }
 
+class _SettingsGroup extends StatelessWidget {
+  final List<_SettingsTile> tiles;
+
+  const _SettingsGroup({required this.tiles});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border.withValues(alpha: 0.3)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (int i = 0; i < tiles.length; i++) ...[
+            tiles[i],
+            if (i < tiles.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 52,
+                color: c.border.withValues(alpha: 0.2),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
+  final Color? iconColor;
   final String title;
   final Widget? trailing;
   final VoidCallback? onTap;
 
   const _SettingsTile({
     required this.icon,
+    this.iconColor,
     required this.title,
     this.trailing,
     this.onTap,
@@ -566,12 +644,24 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(icon, color: c.textSecondary, size: 22),
-      title: Text(title, style: TextStyle(color: c.textPrimary)),
-      trailing: trailing,
+    return TapScale(
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor ?? c.textSecondary, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(color: c.textPrimary, fontSize: 16),
+              ),
+            ),
+            trailing ?? const SizedBox.shrink(),
+          ],
+        ),
+      ),
     );
   }
 }

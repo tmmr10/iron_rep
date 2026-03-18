@@ -37,7 +37,7 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
               workoutId: row.read<int>('workout_id'),
               date: DateTime.fromMillisecondsSinceEpoch(
                   row.read<int>('started_at') * 1000),
-              volume: row.read<double>('total_volume'),
+              volume: (row.data['total_volume'] as num).toDouble(),
             ))
         .toList()
         .reversed
@@ -66,7 +66,7 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
         .map((row) => (
               date: DateTime.fromMillisecondsSinceEpoch(
                   row.read<int>('started_at') * 1000),
-              maxWeight: row.read<double>('max_weight'),
+              maxWeight: (row.data['max_weight'] as num).toDouble(),
             ))
         .toList()
         .reversed
@@ -94,7 +94,7 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
     return results
         .map((row) => (
               date: DateTime.parse(row.read<String>('day')),
-              volume: row.read<double>('volume'),
+              volume: (row.data['volume'] as num).toDouble(),
             ))
         .toList();
   }
@@ -120,7 +120,7 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
     final result = await customSelect(
       'SELECT COALESCE(SUM(weight * reps), 0) AS vol FROM workout_sets WHERE is_completed = 1',
     ).getSingle();
-    return result.read<double>('vol');
+    return (result.data['vol'] as num).toDouble();
   }
 
   /// Enriched history: workout + muscle groups, set count, total volume
@@ -156,7 +156,7 @@ class StatsDao extends DatabaseAccessor<AppDatabase> with _$StatsDaoMixin {
                 ? muscleStr.split(',').where((s) => s.isNotEmpty).toList()
                 : [],
             setCount: row.read<int>('set_count'),
-            totalVolume: row.read<double>('total_volume'),
+            totalVolume: (row.data['total_volume'] as num).toDouble(),
           );
         }).toList());
   }

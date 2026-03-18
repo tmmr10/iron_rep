@@ -88,7 +88,7 @@ final avgWorkoutDurationProvider = FutureProvider<int>((ref) async {
     'SELECT AVG(duration_seconds) AS avg_dur FROM workouts '
     'WHERE completed_at IS NOT NULL AND duration_seconds IS NOT NULL AND duration_seconds > 0',
   ).getSingle();
-  return (result.readNullable<double>('avg_dur') ?? 0).round();
+  return ((result.data['avg_dur'] as num?)?.toDouble() ?? 0).round();
 });
 
 final totalPRsProvider = FutureProvider<int>((ref) async {
@@ -157,11 +157,15 @@ final overallProgressProvider = FutureProvider.family<
       'WHERE w.completed_at IS NOT NULL $planFilter',
       variables: [if (planId > 0) Variable.withInt(planId)],
     ).getSingle();
-    final firstDate = firstRow.readNullable<DateTime>('first_date');
-    if (firstDate == null) {
+    final firstDateEpoch = firstRow.readNullable<int>('first_date');
+    if (firstDateEpoch == null) {
       return (volumeChange: 0.0, frequencyChange: 0.0, avgWeightChange: 0.0, hasPriorData: false);
     }
+    final firstDate = DateTime.fromMillisecondsSinceEpoch(firstDateEpoch * 1000);
     final totalDays = now.difference(firstDate).inDays;
+    if (totalDays <= 0) {
+      return (volumeChange: 0.0, frequencyChange: 0.0, avgWeightChange: 0.0, hasPriorData: false);
+    }
     final halfDays = (totalDays / 2).ceil().clamp(1, totalDays);
     recentEnd = now;
     recentStart = now.subtract(Duration(days: halfDays));
@@ -198,7 +202,7 @@ final overallProgressProvider = FutureProvider.family<
       ''',
       variables: vars(from, to),
     ).getSingle();
-    return r.readNullable<double>('avg_vol') ?? 0;
+    return (r.data['avg_vol'] as num?)?.toDouble() ?? 0;
   }
 
   Future<double> avgFrequency(DateTime from, DateTime to) async {
@@ -228,7 +232,7 @@ final overallProgressProvider = FutureProvider.family<
       ''',
       variables: vars(from, to),
     ).getSingle();
-    return r.readNullable<double>('avg_w') ?? 0;
+    return (r.data['avg_w'] as num?)?.toDouble() ?? 0;
   }
 
   // Find exercise IDs that appear in both periods (intersection)
@@ -276,7 +280,7 @@ final overallProgressProvider = FutureProvider.family<
       ''',
       variables: vars(from, to),
     ).getSingle();
-    return r.readNullable<double>('avg_vol') ?? 0;
+    return (r.data['avg_vol'] as num?)?.toDouble() ?? 0;
   }
 
   Future<double> avgMaxWeightMatched(DateTime from, DateTime to) async {
@@ -297,7 +301,7 @@ final overallProgressProvider = FutureProvider.family<
       ''',
       variables: vars(from, to),
     ).getSingle();
-    return r.readNullable<double>('avg_w') ?? 0;
+    return (r.data['avg_w'] as num?)?.toDouble() ?? 0;
   }
 
   double pctChange(double recent, double prior) =>
@@ -347,9 +351,11 @@ final exerciseProgressProvider = FutureProvider.family<
       'WHERE w.completed_at IS NOT NULL $planFilter0',
       variables: [if (planId > 0) Variable.withInt(planId)],
     ).getSingle();
-    final firstDate = firstRow.readNullable<DateTime>('first_date');
-    if (firstDate == null) return [];
+    final firstDateEpoch = firstRow.readNullable<int>('first_date');
+    if (firstDateEpoch == null) return [];
+    final firstDate = DateTime.fromMillisecondsSinceEpoch(firstDateEpoch * 1000);
     final totalDays = now.difference(firstDate).inDays;
+    if (totalDays <= 0) return [];
     final halfDays = (totalDays / 2).ceil().clamp(1, totalDays);
     recentStart = now.subtract(Duration(days: halfDays));
     priorStart = recentStart.subtract(Duration(days: halfDays));
@@ -381,7 +387,7 @@ final exerciseProgressProvider = FutureProvider.family<
       ''',
       variables: vars(from, to),
     ).get();
-    return {for (final r in rows) r.read<int>('exercise_id'): r.read<double>('max_w')};
+    return {for (final r in rows) r.read<int>('exercise_id'): (r.data['max_w'] as num).toDouble()};
   }
 
   final recentWeights = await maxWeightsInPeriod(recentStart, now);
@@ -446,7 +452,7 @@ final weeklyVolumeProvider =
       ],
     ).getSingle();
 
-    final volume = result.read<double>('volume');
+    final volume = (result.data['volume'] as num).toDouble();
     weeks.add((weekStart: weekStart, volume: volume));
   }
 

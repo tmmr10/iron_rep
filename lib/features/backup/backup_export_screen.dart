@@ -65,11 +65,18 @@ class _BackupExportScreenState extends ConsumerState<BackupExportScreen> {
       );
 
       if (mounted) {
-        await Share.shareXFiles(
+        final box = context.findRenderObject() as RenderBox?;
+        final shareOrigin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100);
+        final result = await Share.shareXFiles(
           [XFile(file.path)],
           subject: 'IronRep Backup',
+          sharePositionOrigin: shareOrigin,
         );
-        setState(() => _done = true);
+        if (result.status == ShareResultStatus.success) {
+          setState(() => _done = true);
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -84,7 +91,7 @@ class _BackupExportScreenState extends ConsumerState<BackupExportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.l10n.backupExport),
+        title: const SizedBox.shrink(),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
@@ -324,7 +331,7 @@ class _BackupExportScreenState extends ConsumerState<BackupExportScreen> {
               : c.border.withValues(alpha: 0.3),
         ),
       ),
-      child: CheckboxListTile(
+      child: SwitchListTile(
         secondary: Icon(icon,
             color: enabled
                 ? (effectiveValue ? c.accent : c.textMuted)
@@ -342,7 +349,7 @@ class _BackupExportScreenState extends ConsumerState<BackupExportScreen> {
               fontSize: 16,
             )),
         value: effectiveValue,
-        onChanged: onChanged,
+        onChanged: onChanged != null ? (v) => onChanged(v) : null,
         activeColor: c.accent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),

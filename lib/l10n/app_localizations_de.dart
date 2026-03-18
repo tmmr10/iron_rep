@@ -899,10 +899,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backupData => 'Daten';
 
   @override
-  String get backupExport => 'Daten exportieren';
+  String get backupExport => 'Export';
 
   @override
-  String get backupImport => 'Daten importieren';
+  String get backupImport => 'Import';
 
   @override
   String get backupImportPreview => 'Backup-Vorschau';

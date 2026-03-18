@@ -5,7 +5,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../models/workout_history_item.dart';
 import '../models/workout_summary.dart';
+import '../services/timer_service.dart';
 import 'database_provider.dart';
+
+// Notification info for background workout notification
+class WorkoutNotificationInfo {
+  final String? exerciseName;
+  final int currentSetIndex;
+  final int totalSets;
+
+  const WorkoutNotificationInfo({
+    this.exerciseName,
+    this.currentSetIndex = 0,
+    this.totalSets = 0,
+  });
+}
+
+final workoutNotificationInfoProvider = StateProvider<WorkoutNotificationInfo>(
+  (ref) => const WorkoutNotificationInfo(),
+);
 
 // Active workout state
 class ActiveWorkoutState {
@@ -203,6 +221,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 
     await _db.workoutDao.finishWorkout(workoutId);
     _timer?.cancel();
+    TimerService.dismissWorkoutNotification();
 
     final workout = await (_db.select(_db.workouts)
           ..where((t) => t.id.equals(workoutId)))
@@ -229,6 +248,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     if (state.workoutId == null) return;
     await _db.workoutDao.cancelWorkout(state.workoutId!);
     _timer?.cancel();
+    TimerService.dismissWorkoutNotification();
     state = const ActiveWorkoutState();
   }
 
