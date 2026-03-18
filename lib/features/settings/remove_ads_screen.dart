@@ -57,7 +57,7 @@ class _RemoveAdsScreenState extends ConsumerState<RemoveAdsScreen> {
     final c = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.removeAds)),
+      appBar: AppBar(title: const SizedBox.shrink()),
       body: SafeArea(
         child: Padding(
           padding: IronRepSpacing.screenPadding,

@@ -47,16 +47,18 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final unknownCount =
-        _matched?.where((m) => m.status == ExerciseMatchStatus.unknown).length ??
-            0;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n.importPlan),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/workout');
+            }
+          },
         ),
       ),
       body: _matched == null
@@ -91,40 +93,9 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                         ),
                       ).animate().fadeIn(delay: 100.ms),
                       const SizedBox(height: 24),
-                      if (unknownCount > 0) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: c.warning.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: c.warning.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.warning_amber_rounded,
-                                  color: c.warning, size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  '$unknownCount ${context.l10n.exercisesNotRecognized}',
-                                  style: TextStyle(
-                                    color: c.warning,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
                       // Exercise list
                       ...List.generate(_matched!.length, (i) {
                         final m = _matched![i];
-                        final isUnknown =
-                            m.status == ExerciseMatchStatus.unknown;
                         final isCustom =
                             m.status == ExerciseMatchStatus.createdCustom;
                         return Container(
@@ -135,9 +106,7 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                             color: c.card,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isUnknown
-                                  ? c.error.withValues(alpha: 0.4)
-                                  : c.border.withValues(alpha: 0.3),
+                              color: c.border.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -147,15 +116,13 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                 height: 28,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: isUnknown
-                                      ? c.error.withValues(alpha: 0.1)
-                                      : c.accent.withValues(alpha: 0.1),
+                                  color: c.accent.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '${i + 1}',
                                   style: TextStyle(
-                                    color: isUnknown ? c.error : c.accent,
+                                    color: c.accent,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                   ),
@@ -169,14 +136,9 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                     Text(
                                       m.displayName,
                                       style: TextStyle(
-                                        color: isUnknown
-                                            ? c.error
-                                            : c.textPrimary,
+                                        color: c.textPrimary,
                                         fontWeight: FontWeight.w500,
                                         fontSize: 15,
-                                        decoration: isUnknown
-                                            ? TextDecoration.lineThrough
-                                            : null,
                                       ),
                                     ),
                                     if (isCustom)
@@ -184,14 +146,6 @@ class _PlanImportScreenState extends ConsumerState<PlanImportScreen> {
                                         context.l10n.customExerciseCreated,
                                         style: TextStyle(
                                           color: c.textMuted,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    if (isUnknown)
-                                      Text(
-                                        context.l10n.exerciseNotFound,
-                                        style: TextStyle(
-                                          color: c.error.withValues(alpha: 0.7),
                                           fontSize: 12,
                                         ),
                                       ),

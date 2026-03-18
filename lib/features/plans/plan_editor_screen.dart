@@ -163,11 +163,22 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                     ),
                   ),
           ),
-          if (isEditing)
-            IconButton(
-              icon: Icon(Icons.more_horiz, color: c.textSecondary),
-              onPressed: () => _showPlanOptions(context, c),
+          if (isEditing) ...[
+            TextButton(
+              onPressed: _deletePlan,
+              child: Text(
+                context.l10n.delete,
+                style: TextStyle(
+                  color: c.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
+            IconButton(
+              icon: Icon(Icons.share, color: c.textSecondary),
+              onPressed: _sharePlan,
+            ),
+          ],
         ],
       ),
       floatingActionButton: _isLoading
@@ -190,10 +201,14 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                     children: [
-                      // Plan name — gradient inline edit
-                      _GradientNameField(
+                      // Plan name
+                      TextField(
                         controller: _nameController,
-                        colors: c,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: TextStyle(color: c.textPrimary, fontSize: 16),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.planName,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       // Section header
@@ -429,94 +444,6 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     if (mounted) context.pop();
   }
 
-  void _showPlanOptions(BuildContext context, AppColors c) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: c.textMuted.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TapScale(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _sharePlan();
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: c.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.accent.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.sharePlan,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TapScale(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _deletePlan();
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: c.error.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.error.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.deletePlan,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _sharePlan() async {
     final db = ref.read(databaseProvider);
     final allExercises = await db.exerciseDao.getAll();
@@ -547,11 +474,11 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       final ex = entry.value;
       return '$i. ${ex.name} — ${ex.targetSets} ${context.l10n.sets}';
     }).join('\n');
-    final url = PlanSharingService.buildShareUrl(encoded);
+    final deepLink = 'ironrep://plan/$encoded';
     final message = '💪 $planName\n'
         '${context.l10n.exercisesCount(_exercises.length, totalSets)}\n\n'
         '$exerciseLines\n\n'
-        '${context.l10n.importPlanShareMessage(url)}';
+        '👉 ${context.l10n.importPlanShareMessage(deepLink)}';
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(
       message,
@@ -764,67 +691,3 @@ class _ExerciseRow extends StatelessWidget {
   }
 }
 
-class _GradientNameField extends StatefulWidget {
-  final TextEditingController controller;
-  final AppColors colors;
-
-  const _GradientNameField({
-    required this.controller,
-    required this.colors,
-  });
-
-  @override
-  State<_GradientNameField> createState() => _GradientNameFieldState();
-}
-
-class _GradientNameFieldState extends State<_GradientNameField> {
-  bool _hasFocus = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = widget.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Focus(
-          onFocusChange: (focused) => setState(() => _hasFocus = focused),
-          child: ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [c.accentGradientStart, c.accentGradientEnd],
-            ).createShader(bounds),
-            blendMode: BlendMode.srcIn,
-            child: TextField(
-              controller: widget.controller,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-              decoration: InputDecoration(
-                hintText: context.l10n.planName,
-                hintStyle: TextStyle(
-                  color: c.textMuted.withValues(alpha: 0.4),
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-                border: InputBorder.none,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-        ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 2,
-          margin: const EdgeInsets.only(top: 4),
-          decoration: BoxDecoration(
-            color: _hasFocus ? c.accent : c.border.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(1),
-          ),
-        ),
-      ],
-    );
-  }
-}

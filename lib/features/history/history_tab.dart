@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
 import '../../l10n/l10n_helper.dart';
-import '../../shared/widgets/empty_state.dart';
 import 'manual_workout_sheet.dart';
 import 'widgets/workout_calendar.dart';
 
@@ -34,14 +33,6 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
       ),
       body: history.when(
         data: (workouts) {
-          if (workouts.isEmpty) {
-            return EmptyState(
-              icon: Icons.calendar_month_rounded,
-              title: context.l10n.noWorkoutsYet,
-              subtitle: context.l10n.completeFirstWorkout,
-            );
-          }
-
           return WorkoutCalendar(workouts: workouts);
         },
         loading: () => const Center(child: CircularProgressIndicator()),

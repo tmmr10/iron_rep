@@ -196,68 +196,6 @@ class ExerciseDetailScreen extends ConsumerWidget {
     ref.invalidate(exerciseWithEquipmentProvider(exerciseId));
   }
 
-  void _showExerciseOptions(BuildContext context, WidgetRef ref, AppColors c) {
-    final l = context.l10n;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: c.textMuted.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TapScale(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _confirmDelete(context, ref, c);
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: c.error.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.error.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Text(
-                      l.deleteExercise,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, AppColors c) async {
     final l = context.l10n;
@@ -308,7 +246,7 @@ class ExerciseDetailScreen extends ConsumerWidget {
                   children: [
                     TextButton(
                       child: Text(l.edit,
-                          style: TextStyle(color: c.accent, fontWeight: FontWeight.w500)),
+                          style: TextStyle(color: c.accent, fontWeight: FontWeight.w600)),
                       onPressed: () async {
                         final saved = await showModalBottomSheet<bool>(
                           context: context,
@@ -339,9 +277,10 @@ class ExerciseDetailScreen extends ConsumerWidget {
                         }
                       },
                     ),
-                    IconButton(
-                      icon: Icon(Icons.more_horiz, color: c.textSecondary),
-                      onPressed: () => _showExerciseOptions(context, ref, c),
+                    TextButton(
+                      onPressed: () => _confirmDelete(context, ref, c),
+                      child: Text(l.delete,
+                          style: TextStyle(color: c.error, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),

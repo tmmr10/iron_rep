@@ -283,12 +283,28 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       appBar: AppBar(
         title: const SizedBox.shrink(),
         actions: [
-          if (!_isEditing)
-            IconButton(
-              icon: Icon(Icons.more_horiz, color: c.textSecondary),
-              onPressed: () => _showOptions(context, c),
-            )
-          else ...[
+          if (!_isEditing) ...[
+            TextButton(
+              onPressed: _startEditing,
+              child: Text(
+                context.l10n.edit,
+                style: TextStyle(
+                  color: c.accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => _confirmDelete(context),
+              child: Text(
+                context.l10n.delete,
+                style: TextStyle(
+                  color: c.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ] else ...[
             TextButton(
               onPressed: () => _saveEdits(),
               child: Text(
@@ -840,94 +856,6 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showOptions(BuildContext context, AppColors c) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: c.textMuted.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TapScale(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _startEditing();
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: c.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.accent.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.edit,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TapScale(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _confirmDelete(context);
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: c.error.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: c.error.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Text(
-                      context.l10n.deleteWorkout,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

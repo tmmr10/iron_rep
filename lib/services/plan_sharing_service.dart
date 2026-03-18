@@ -89,6 +89,15 @@ class MatchedExercise {
   });
 }
 
+/// Converts a snake_case nameKey to Title Case display name.
+/// e.g. `bench_press` → `Bench Press`
+String _nameKeyToDisplayName(String nameKey) {
+  return nameKey
+      .split('_')
+      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+      .join(' ');
+}
+
 class PlanSharingService {
   static String encodePlan(String name, List<ShareableExercise> exercises) {
     final plan = SharedPlan(version: 1, name: name, exercises: exercises);
@@ -129,10 +138,11 @@ class PlanSharingService {
           displayName: ex.customName!,
         ));
       } else {
+        final generatedName = _nameKeyToDisplayName(ex.nameKey);
         results.add(MatchedExercise(
           source: ex,
-          status: ExerciseMatchStatus.unknown,
-          displayName: ex.nameKey,
+          status: ExerciseMatchStatus.createdCustom,
+          displayName: generatedName,
         ));
       }
     }
@@ -161,7 +171,22 @@ class PlanSharingService {
         if (existing == null) continue;
       }
 
-      if (existing == null) continue;
+      if (existing == null) {
+        // Create as custom exercise with name derived from nameKey
+        final generatedName = _nameKeyToDisplayName(ex.nameKey);
+        await db.exerciseDao.insertExercise(
+          ExercisesCompanion.insert(
+            name: generatedName,
+            nameKey: ex.nameKey,
+            primaryMuscleGroup: ex.muscleGroup ?? 'chest',
+            category: ex.category ?? 'compound',
+            isCustom: const Value(true),
+            createdAt: Value(DateTime.now()),
+          ),
+        );
+        existing = await db.exerciseDao.getByNameKey(ex.nameKey);
+        if (existing == null) continue;
+      }
 
       await db.planDao.addExerciseToPlan(
         planId,

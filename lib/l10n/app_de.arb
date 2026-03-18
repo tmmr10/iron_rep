@@ -273,6 +273,8 @@
   "startTraining": "Training starten",
   "startWorkout": "Workout starten",
   "endWorkout": "Workout beenden",
+  "finishWorkout": "Workout abschließen",
+  "switchToGuidedMode": "Zum geführten Modus wechseln",
   "discardWorkout": "Workout verwerfen",
   "discardWorkoutConfirm": "Workout verwerfen?",
   "allProgressWillBeLost": "Alle Fortschritte gehen verloren.",
@@ -384,7 +386,7 @@
   "volumeLabel": "Volumen",
   "weightLabel": "Gewicht",
   "importPlan": "Workout importieren",
-  "importPlanShareMessage": "Plan in IronRep importieren:\n{url}",
+  "importPlanShareMessage": "In IronRep öffnen:\n{url}",
   "@importPlanShareMessage": {
     "placeholders": {
       "url": {"type": "String"}
@@ -411,5 +413,48 @@
   "period1Year": "1 Jahr",
   "defaultWorkoutName": "Workout",
   "adLabel": "Werbung",
-  "reps": "Wiederholungen"
+  "reps": "Wiederholungen",
+
+  "backupData": "Daten",
+  "backupExport": "Daten exportieren",
+  "backupImport": "Daten importieren",
+  "backupImportPreview": "Backup-Vorschau",
+  "backupExportedAt": "Exportiert am {date}",
+  "@backupExportedAt": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "backupPlans": "Pläne",
+  "backupImportPlans": "Pläne importieren",
+  "backupImportWorkouts": "Workouts importieren",
+  "backupNoDuplicates": "Bestehende Daten werden nicht überschrieben. Duplikate werden automatisch erkannt.",
+  "backupExportProgress": "Backup wird erstellt...",
+  "backupImportProgress": "Daten werden importiert...",
+  "backupImportStart": "Import starten",
+  "backupImportSuccess": "Import abgeschlossen",
+  "backupWorkoutsImported": "{count} Workouts importiert",
+  "@backupWorkoutsImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupPlansImported": "{count} Pläne importiert",
+  "@backupPlansImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupExercisesImported": "{count} Übungen importiert",
+  "@backupExercisesImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupRecordsImported": "{count} Rekorde importiert",
+  "@backupRecordsImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

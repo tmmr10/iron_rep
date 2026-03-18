@@ -273,6 +273,8 @@
   "startTraining": "Start training",
   "startWorkout": "Start workout",
   "endWorkout": "End workout",
+  "finishWorkout": "Finish Workout",
+  "switchToGuidedMode": "Switch to Guided Mode",
   "discardWorkout": "Discard workout",
   "discardWorkoutConfirm": "Discard workout?",
   "allProgressWillBeLost": "All progress will be lost.",
@@ -384,7 +386,7 @@
   "volumeLabel": "Volume",
   "weightLabel": "Weight",
   "importPlan": "Import workout",
-  "importPlanShareMessage": "Import plan in IronRep:\n{url}",
+  "importPlanShareMessage": "Open in IronRep:\n{url}",
   "@importPlanShareMessage": {
     "placeholders": {
       "url": {"type": "String"}
@@ -411,5 +413,48 @@
   "period1Year": "1 year",
   "defaultWorkoutName": "Workout",
   "adLabel": "Ad",
-  "reps": "Reps"
+  "reps": "Reps",
+
+  "backupData": "Data",
+  "backupExport": "Export data",
+  "backupImport": "Import data",
+  "backupImportPreview": "Backup preview",
+  "backupExportedAt": "Exported on {date}",
+  "@backupExportedAt": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "backupPlans": "Plans",
+  "backupImportPlans": "Import plans",
+  "backupImportWorkouts": "Import workouts",
+  "backupNoDuplicates": "Existing data will not be overwritten. Duplicates are detected automatically.",
+  "backupExportProgress": "Creating backup...",
+  "backupImportProgress": "Importing data...",
+  "backupImportStart": "Start import",
+  "backupImportSuccess": "Import completed",
+  "backupWorkoutsImported": "{count} workouts imported",
+  "@backupWorkoutsImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupPlansImported": "{count} plans imported",
+  "@backupPlansImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupExercisesImported": "{count} exercises imported",
+  "@backupExercisesImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "backupRecordsImported": "{count} records imported",
+  "@backupRecordsImported": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }
