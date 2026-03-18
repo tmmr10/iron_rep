@@ -164,8 +164,10 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               _currentSetIndex = sets.length - 1;
             }
 
-            // If current set is completed, jump to first uncompleted set
-            if (sets.isNotEmpty &&
+            // If current set is completed and no rest timer running,
+            // jump to first uncompleted set (e.g. after adding a set in list mode)
+            if (!timer.isRunning &&
+                sets.isNotEmpty &&
                 _currentSetIndex < sets.length &&
                 sets[_currentSetIndex].isCompleted) {
               final nextUncompleted =
