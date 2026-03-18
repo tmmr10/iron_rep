@@ -177,9 +177,10 @@ class MainActivity : FlutterActivity() {
         NotificationManagerCompat.from(this).cancel(TIMER_NOTIFICATION_ID)
     }
 
-    private fun launchIntent(): PendingIntent {
+    private fun launchIntent(route: String? = null): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (route != null) putExtra("route", route)
         }
         return PendingIntent.getActivity(
             this, 0, intent,
@@ -199,7 +200,7 @@ class MainActivity : FlutterActivity() {
         val notification = NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setLargeIcon(largeIcon)
-            .setColor(0xFFCCFF00.toInt())
+            .setColor(0xFF000000.toInt())
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(launchIntent())
@@ -223,10 +224,10 @@ class MainActivity : FlutterActivity() {
         val notification = NotificationCompat.Builder(this, WORKOUT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setLargeIcon(largeIcon)
-            .setColor(0xFFCCFF00.toInt())
+            .setColor(0xFF000000.toInt())
             .setContentTitle(title)
             .setContentText(body)
-            .setContentIntent(launchIntent())
+            .setContentIntent(launchIntent("/active-workout"))
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -244,6 +245,13 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIncomingIntent(intent)
+        handleRouteIntent(intent)
+    }
+
+    private fun handleRouteIntent(intent: Intent?) {
+        val route = intent?.getStringExtra("route") ?: return
+        MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, NOTIFICATION_CHANNEL)
+            .invokeMethod("navigateTo", route)
     }
 
     private fun handleIncomingIntent(intent: Intent?) {

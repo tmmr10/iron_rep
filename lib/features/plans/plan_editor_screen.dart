@@ -163,22 +163,11 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                     ),
                   ),
           ),
-          if (isEditing) ...[
-            TextButton(
-              onPressed: _deletePlan,
-              child: Text(
-                context.l10n.delete,
-                style: TextStyle(
-                  color: c.error,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          if (isEditing)
             IconButton(
-              icon: Icon(Icons.share, color: c.textSecondary),
-              onPressed: _sharePlan,
+              icon: Icon(Icons.more_vert, color: c.textSecondary),
+              onPressed: () => _showPlanMenu(c),
             ),
-          ],
         ],
       ),
       floatingActionButton: _isLoading
@@ -442,6 +431,106 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       ref.invalidate(planExerciseNamesProvider(widget.planId!));
     }
     if (mounted) context.pop();
+  }
+
+  void _showPlanMenu(AppColors c) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sharePlan();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.share, color: c.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.sharePlan,
+                          style: TextStyle(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deletePlan();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: c.error, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.deletePlan,
+                          style: TextStyle(
+                            color: c.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _sharePlan() async {

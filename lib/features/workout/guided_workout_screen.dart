@@ -237,17 +237,18 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (nextExerciseName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      context.l10n.nextExerciseLabel(nextExerciseName!),
-                      style: TextStyle(
-                        color: c.textMuted,
-                        fontSize: 12,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    nextExerciseName != null
+                        ? context.l10n.nextExerciseLabel(nextExerciseName!)
+                        : ' ',
+                    style: TextStyle(
+                      color: c.textMuted,
+                      fontSize: 12,
                     ),
                   ),
+                ),
                 const SizedBox(height: 12),
                 // Carousel for unified card
                 Expanded(
@@ -606,14 +607,20 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                         color: c.accent.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: Text(
-                      context.l10n.endWorkout,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline, color: c.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.endWorkout,
+                          style: TextStyle(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -633,14 +640,20 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                         color: c.error.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Text(
-                      context.l10n.discardWorkout,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: c.error, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.discardWorkout,
+                          style: TextStyle(
+                            color: c.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -695,12 +708,23 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     await notifier.completeSet(currentSet.id);
     HapticFeedback.mediumImpact();
 
-    // Check if this was the last set of the last exercise
-    final hasMoreSets = sets.any((s) => !s.isCompleted && s.id != currentSet.id);
-    final isLastExercise = _currentExerciseIndex + 1 >= exercises.length;
+    // Check if all sets across ALL exercises are completed
+    final hasMoreSetsInCurrent = sets.any((s) => !s.isCompleted && s.id != currentSet.id);
 
-    if (!hasMoreSets && isLastExercise) {
-      // Skip timer, show finish dialog directly
+    // Check other exercises too
+    bool allExercisesDone = !hasMoreSetsInCurrent;
+    if (allExercisesDone) {
+      for (final ex in exercises) {
+        if (ex.id == exercises[_currentExerciseIndex].id) continue;
+        final otherSets = ref.read(setsForWorkoutExerciseProvider(ex.id)).valueOrNull ?? [];
+        if (otherSets.any((s) => !s.isCompleted)) {
+          allExercisesDone = false;
+          break;
+        }
+      }
+    }
+
+    if (allExercisesDone) {
       _showAllCompletedDialog();
       return;
     }
@@ -710,8 +734,26 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     ref.read(restTimerProvider.notifier).start(restSeconds);
   }
 
+  void _resumeIfPaused() {
+    final workout = ref.read(activeWorkoutProvider);
+    if (workout.isPaused) {
+      ref.read(activeWorkoutProvider.notifier).togglePause();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.continueTraining),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _advanceAfterRest(
       List<WorkoutSet>? setsOverride, List<WorkoutExercise>? exercisesOverride) {
+    _resumeIfPaused();
+
     // Always read fresh data from providers
     final exercises = exercisesOverride ??
         ref.read(workoutExercisesProvider(widget.workoutId)).valueOrNull ??

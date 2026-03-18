@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design_system.dart';
+import 'tap_scale.dart';
 
 class WeightSlider extends StatelessWidget {
   final double value;
@@ -21,9 +24,21 @@ class WeightSlider extends StatelessWidget {
     required this.onChanged,
   });
 
+  void _adjust(double delta) {
+    final newVal = (value + delta).clamp(min, max);
+    if (newVal != value) {
+      HapticFeedback.lightImpact();
+      onChanged(newVal);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+
+    // 1kg steps on slider; fine-tuning via buttons
+    const sliderStep = 1.0;
+    final divisions = ((max - min) / sliderStep).round();
 
     return Column(
       children: [
@@ -46,7 +61,7 @@ class WeightSlider extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 16),
-        // Slider
+        // Slider with dot track
         SliderTheme(
           data: SliderThemeData(
             activeTrackColor: c.accent,
@@ -54,56 +69,37 @@ class WeightSlider extends StatelessWidget {
             thumbColor: c.accent,
             overlayColor: c.accent.withValues(alpha: 0.12),
             trackHeight: 6,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
+            trackShape: _DotTrackShape(
+              dotSpacing: 5.0,
+              activeColor: c.accent,
+              inactiveColor: c.textMuted.withValues(alpha: 0.3),
+            ),
           ),
           child: Slider(
             value: value.clamp(min, max),
             min: min,
             max: max,
-            divisions: ((max - min) / step).round(),
+            divisions: divisions,
             onChanged: (v) {
               HapticFeedback.selectionClick();
               onChanged(v);
             },
           ),
         ),
-        const SizedBox(height: 8),
-        // Fine adjustment buttons
+        const SizedBox(height: 12),
+        // Adjustment buttons: minus and plus
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _AdjustButton(
-              label: '+0.5',
-              onTap: () {
-                if (value + 0.5 <= max) {
-                  HapticFeedback.lightImpact();
-                  onChanged(value + 0.5);
-                }
-              },
-              colors: c,
-            ),
-            const SizedBox(width: 12),
-            _AdjustButton(
-              label: '+1',
-              onTap: () {
-                if (value + 1 <= max) {
-                  HapticFeedback.lightImpact();
-                  onChanged(value + 1);
-                }
-              },
-              colors: c,
-            ),
-            const SizedBox(width: 12),
-            _AdjustButton(
-              label: '+2.5',
-              onTap: () {
-                if (value + 2.5 <= max) {
-                  HapticFeedback.lightImpact();
-                  onChanged(value + 2.5);
-                }
-              },
-              colors: c,
-            ),
+            _AdjustButton(label: '\u22121', onTap: () => _adjust(-1), colors: c),
+            const SizedBox(width: 10),
+            _AdjustButton(label: '\u22120.5', onTap: () => _adjust(-0.5), colors: c),
+            const SizedBox(width: 20),
+            _AdjustButton(label: '+0.5', onTap: () => _adjust(0.5), colors: c, accent: true),
+            const SizedBox(width: 10),
+            _AdjustButton(label: '+1', onTap: () => _adjust(1), colors: c, accent: true),
           ],
         ),
       ],
@@ -111,34 +107,107 @@ class WeightSlider extends StatelessWidget {
   }
 }
 
+/// Custom track that draws dots instead of a continuous bar, like the duration slider.
+class _DotTrackShape extends SliderTrackShape {
+  final double dotSpacing;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _DotTrackShape({
+    required this.dotSpacing,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight ?? 6;
+    final trackLeft = offset.dx + 12;
+    final trackTop =
+        offset.dy + (parentBox.size.height - trackHeight) / 2;
+    final trackWidth = parentBox.size.width - 24;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+    required TextDirection textDirection,
+  }) {
+    final rect = getPreferredRect(
+      parentBox: parentBox,
+      offset: offset,
+      sliderTheme: sliderTheme,
+    );
+    final canvas = context.canvas;
+    final dotRadius = 2.5;
+    final cy = rect.center.dy;
+
+    // Calculate number of dots
+    final totalDots = math.max(1, (rect.width / dotSpacing).floor());
+
+    for (int i = 0; i <= totalDots; i++) {
+      final x = rect.left + (i / totalDots) * rect.width;
+      final isActive = x <= thumbCenter.dx;
+      canvas.drawCircle(
+        Offset(x, cy),
+        dotRadius,
+        Paint()..color = isActive ? activeColor : inactiveColor,
+      );
+    }
+  }
+}
+
 class _AdjustButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final AppColors colors;
+  final bool accent;
 
   const _AdjustButton({
     required this.label,
     required this.onTap,
     required this.colors,
+    this.accent = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: colors.surface,
+          color: accent
+              ? colors.accent.withValues(alpha: 0.1)
+              : colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.border),
+          border: Border.all(
+            color: accent
+                ? colors.accent.withValues(alpha: 0.3)
+                : colors.border,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            color: accent ? colors.accent : colors.textSecondary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

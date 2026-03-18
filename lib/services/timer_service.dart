@@ -1,54 +1,73 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 class TimerService {
-  static final _notifications = FlutterLocalNotificationsPlugin();
-  static const _channelId = 'rest_timer';
+  static const _channel = MethodChannel('com.tmmr.iron_rep/notifications');
+  static bool _permissionGranted = false;
+  static void Function(String route)? onNavigateTo;
 
   static Future<void> initialize() async {
-    tz.initializeTimeZones();
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'navigateTo' && onNavigateTo != null) {
+        onNavigateTo!(call.arguments as String);
+      }
+    });
+  }
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestSoundPermission: true,
-    );
-
-    await _notifications.initialize(
-      const InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      ),
-    );
+  static Future<bool> ensurePermission() async {
+    if (_permissionGranted) return true;
+    try {
+      final granted = await _channel.invokeMethod<bool>('requestPermission');
+      _permissionGranted = granted ?? false;
+      debugPrint('TimerService: permission=$_permissionGranted');
+      return _permissionGranted;
+    } catch (e) {
+      debugPrint('TimerService permission error: $e');
+      return false;
+    }
   }
 
   static Future<void> scheduleTimerEnd(int seconds) async {
-    await _notifications.zonedSchedule(
-      0,
-      'Pausentimer',
-      'Weiter geht\'s!',
-      tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds)),
-      const NotificationDetails(
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-        ),
-        android: AndroidNotificationDetails(
-          _channelId,
-          'Pausentimer',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    try {
+      final hasPermission = await ensurePermission();
+      if (!hasPermission) return;
+
+      final result = await _channel.invokeMethod<bool>('scheduleTimer', {
+        'seconds': seconds,
+        'title': 'Pausentimer',
+        'body': 'Weiter geht\'s! 💪',
+      });
+      debugPrint('TimerService: scheduled=$result (${seconds}s)');
+    } catch (e) {
+      debugPrint('TimerService schedule error: $e');
+    }
   }
 
   static Future<void> cancelTimer() async {
-    await _notifications.cancel(0);
+    try {
+      await _channel.invokeMethod('cancelTimer');
+    } catch (_) {}
+  }
+
+  static Future<void> showWorkoutNotification({
+    required String title,
+    required String body,
+  }) async {
+    try {
+      final hasPermission = await ensurePermission();
+      if (!hasPermission) return;
+      await _channel.invokeMethod('showOngoingNotification', {
+        'title': title,
+        'body': body,
+      });
+    } catch (e) {
+      debugPrint('TimerService showWorkoutNotification error: $e');
+    }
+  }
+
+  static Future<void> dismissWorkoutNotification() async {
+    try {
+      await _channel.invokeMethod('dismissOngoingNotification');
+    } catch (_) {}
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../l10n/l10n_helper.dart';
 
 import '../design_system.dart';
+import 'tap_scale.dart';
 
 class RepsStepper extends StatelessWidget {
   final int value;
@@ -27,14 +28,13 @@ class RepsStepper extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Minus button
-            GestureDetector(
+            TapScale(
               onTap: () {
                 if (value > 0) {
                   HapticFeedback.lightImpact();
                   onChanged(value - 1);
                 }
               },
-              onLongPressStart: (_) => _startAutoDecrement(context),
               child: Container(
                 width: 56,
                 height: 56,
@@ -68,12 +68,11 @@ class RepsStepper extends StatelessWidget {
               ),
             ),
             // Plus button
-            GestureDetector(
+            TapScale(
               onTap: () {
                 HapticFeedback.lightImpact();
                 onChanged(value + 1);
               },
-              onLongPressStart: (_) => _startAutoIncrement(context),
               child: Container(
                 width: 56,
                 height: 56,

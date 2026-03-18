@@ -516,14 +516,20 @@ class _ListModeScreen extends ConsumerWidget {
                         color: c.accent.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: Text(
-                      context.l10n.endWorkout,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline, color: c.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.endWorkout,
+                          style: TextStyle(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -543,14 +549,20 @@ class _ListModeScreen extends ConsumerWidget {
                         color: c.error.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Text(
-                      context.l10n.discardWorkout,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: c.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: c.error, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.discardWorkout,
+                          style: TextStyle(
+                            color: c.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

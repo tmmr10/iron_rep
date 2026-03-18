@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/timer_providers.dart';
 import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
+import '../../shared/widgets/tap_scale.dart';
 
 class GuidedRestTimer extends ConsumerWidget {
   final String? nextExerciseName;
@@ -138,7 +139,7 @@ class _TimerAdjustButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
