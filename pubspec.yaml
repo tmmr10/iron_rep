@@ -1,7 +1,7 @@
 name: iron_rep
 description: "IronRep — Fitness Workout Tracker"
 publish_to: 'none'
-version: 1.0.0+27
+version: 1.0.0+33
 
 environment:
   sdk: ^3.10.1
@@ -69,3 +69,5 @@ flutter:
   assets:
     - assets/equipment/
     - assets/exercises/
+    - assets/icon/
+    - google_fonts/
