@@ -132,6 +132,18 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
             final prevSets = previousSetsAsync.valueOrNull ?? [];
             final muscleColor = muscleGroup?.color ?? c.accent;
 
+            // Sync notification info for background notification
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                ref.read(workoutNotificationInfoProvider.notifier).state =
+                    WorkoutNotificationInfo(
+                  exerciseName: exerciseName,
+                  currentSetIndex: _currentSetIndex,
+                  totalSets: sets.length,
+                );
+              }
+            });
+
             if (!_initialized && sets.isNotEmpty) {
               final currentSet = _currentSetIndex < sets.length
                   ? sets[_currentSetIndex]
@@ -661,6 +673,16 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     );
     await notifier.completeSet(currentSet.id);
     HapticFeedback.mediumImpact();
+
+    // Check if this was the last set of the last exercise
+    final hasMoreSets = sets.any((s) => !s.isCompleted && s.id != currentSet.id);
+    final isLastExercise = _currentExerciseIndex + 1 >= exercises.length;
+
+    if (!hasMoreSets && isLastExercise) {
+      // Skip timer, show finish dialog directly
+      _showAllCompletedDialog();
+      return;
+    }
 
     final restSeconds =
         await ref.read(defaultRestSecondsProvider.future);

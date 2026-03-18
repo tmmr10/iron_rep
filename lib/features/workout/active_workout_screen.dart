@@ -39,6 +39,31 @@ final _workoutProgressProvider =
   });
 });
 
+// Computes notification info for list mode: finds first exercise with incomplete sets
+final _listModeNotificationInfoProvider =
+    FutureProvider.family<WorkoutNotificationInfo, int>((ref, workoutId) async {
+  final db = ref.watch(databaseProvider);
+  final exercises = await db.workoutDao.getWorkoutExercises(workoutId);
+  final allExercises = await db.exerciseDao.getAll();
+
+  for (final we in exercises) {
+    final sets = await db.workoutDao.getSetsForWorkoutExercise(we.id);
+    final completedCount = sets.where((s) => s.isCompleted == true).length;
+    if (completedCount < sets.length) {
+      final exercise = allExercises.where((e) => e.id == we.exerciseId);
+      final name = exercise.isNotEmpty ? exercise.first.name : null;
+      return WorkoutNotificationInfo(
+        exerciseName: name,
+        currentSetIndex: completedCount,
+        totalSets: sets.length,
+      );
+    }
+  }
+
+  // All exercises complete — show plan name with total progress
+  return const WorkoutNotificationInfo();
+});
+
 final isGuidedModeProvider = StateProvider<bool>((ref) => true);
 
 class ActiveWorkoutScreen extends ConsumerWidget {
@@ -127,6 +152,15 @@ class _ListModeScreen extends ConsumerWidget {
     final totalSets = progressData?.total ?? 1;
     final progressValue = totalSets > 0 ? completedSets / totalSets : 0.0;
 
+    // Sync notification info for background notification
+    final listNotifInfo = ref.watch(_listModeNotificationInfoProvider(workoutId));
+    final notifData = listNotifInfo.valueOrNull;
+    if (notifData != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(workoutNotificationInfoProvider.notifier).state = notifData;
+      });
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -184,22 +218,6 @@ class _ListModeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  // Guided mode toggle
-                  TapScale(
-                    onTap: () =>
-                        ref.read(isGuidedModeProvider.notifier).state = true,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: c.surface,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.view_carousel_outlined,
-                          color: c.textSecondary, size: 22),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   // Pause button
                   TapScale(
                     onTap: () => ref
@@ -221,6 +239,21 @@ class _ListModeScreen extends ConsumerWidget {
                         color: isPaused ? c.warning : c.textSecondary,
                         size: 22,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // More options (bottom sheet)
+                  TapScale(
+                    onTap: () => _showMoreOptions(context, ref, c),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.more_horiz,
+                          color: c.textSecondary, size: 22),
                     ),
                   ),
                 ],
@@ -313,6 +346,8 @@ class _ListModeScreen extends ConsumerWidget {
                             workoutExercise: we,
                             workoutId: workoutId,
                             initiallyExpanded: index == 0,
+                            isLastExercise: index == exercises.length - 1,
+                            onAllCompleted: () => _showAllCompletedDialog(context, ref),
                           );
                         },
                       );
@@ -333,54 +368,56 @@ class _ListModeScreen extends ConsumerWidget {
             // Bottom bar
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: Column(
-                children: [
-                  TapScale(
-                    onTap: () => _finishWorkout(context, ref),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: IronRepGradients.accent(c),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: c.accent.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          context.l10n.endWorkout,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
+              child: TextButton(
+                onPressed: () =>
+                    ref.read(isGuidedModeProvider.notifier).state = true,
+                child: Text(
+                  context.l10n.switchToGuidedMode,
+                  style: TextStyle(
+                    color: c.textMuted,
+                    fontSize: 14,
                   ),
-                  TapScale(
-                    onTap: () => _showCancelDialog(context, ref),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        context.l10n.discard,
-                        style: TextStyle(
-                          color: c.textMuted,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAllCompletedDialog(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text(context.l10n.allExercisesCompleted,
+            style: TextStyle(color: c.textPrimary)),
+        content: Text(context.l10n.confirmEndWorkout,
+            style: TextStyle(color: c.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              context.l10n.keepTraining,
+              style: TextStyle(color: c.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _finishWorkout(context, ref);
+            },
+            child: Text(
+              context.l10n.endWorkout,
+              style: TextStyle(
+                color: c.accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -432,6 +469,94 @@ class _ListModeScreen extends ConsumerWidget {
                 .addExercise(exerciseId);
             if (context.mounted) Navigator.pop(context);
           },
+        ),
+      ),
+    );
+  }
+
+  void _showMoreOptions(BuildContext context, WidgetRef ref, AppColors c) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _finishWorkout(context, ref);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      context.l10n.endWorkout,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TapScale(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCancelDialog(context, ref);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: c.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: c.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Text(
+                      context.l10n.discardWorkout,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: c.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

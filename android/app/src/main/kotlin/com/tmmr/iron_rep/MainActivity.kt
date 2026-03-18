@@ -4,7 +4,9 @@ import android.Manifest
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -175,6 +177,16 @@ class MainActivity : FlutterActivity() {
         NotificationManagerCompat.from(this).cancel(TIMER_NOTIFICATION_ID)
     }
 
+    private fun launchIntent(): PendingIntent {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        return PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     private fun showTimerNotification(title: String, body: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -183,10 +195,14 @@ class MainActivity : FlutterActivity() {
             return
         }
 
+        val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
         val notification = NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
+            .setColor(0xFFCBD54C.toInt())
             .setContentTitle(title)
             .setContentText(body)
+            .setContentIntent(launchIntent())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
@@ -203,10 +219,14 @@ class MainActivity : FlutterActivity() {
             return
         }
 
+        val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
         val notification = NotificationCompat.Builder(this, WORKOUT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
+            .setColor(0xFFCBD54C.toInt())
             .setContentTitle(title)
             .setContentText(body)
+            .setContentIntent(launchIntent())
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)

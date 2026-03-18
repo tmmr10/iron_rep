@@ -23,12 +23,16 @@ class SetLoggerCard extends ConsumerStatefulWidget {
   final WorkoutExercise workoutExercise;
   final int workoutId;
   final bool initiallyExpanded;
+  final bool isLastExercise;
+  final VoidCallback? onAllCompleted;
 
   const SetLoggerCard({
     super.key,
     required this.workoutExercise,
     required this.workoutId,
     this.initiallyExpanded = false,
+    this.isLastExercise = false,
+    this.onAllCompleted,
   });
 
   @override
@@ -157,6 +161,8 @@ class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
                 final s = entry.value;
                 final prevSet =
                     index < previousSets.length ? previousSets[index] : null;
+                // Fallback: if no previous workout data, use first set of current workout
+                final firstSet = index > 0 && prevSet == null ? sets.first : null;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Dismissible(
@@ -178,9 +184,13 @@ class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
                     child: _SetRow(
                       set_: s,
                       previousSet: prevSet,
+                      fallbackSet: firstSet,
                       workoutExerciseId: widget.workoutExercise.id,
                       exerciseId: widget.workoutExercise.exerciseId,
                       workoutId: widget.workoutId,
+                      allSets: sets,
+                      isLastExercise: widget.isLastExercise,
+                      onAllCompleted: widget.onAllCompleted,
                     ),
                   ),
                 );
@@ -219,16 +229,24 @@ class _SetLoggerCardState extends ConsumerState<SetLoggerCard> {
 class _SetRow extends ConsumerStatefulWidget {
   final WorkoutSet set_;
   final WorkoutSet? previousSet;
+  final WorkoutSet? fallbackSet;
   final int workoutExerciseId;
   final int exerciseId;
   final int workoutId;
+  final List<WorkoutSet> allSets;
+  final bool isLastExercise;
+  final VoidCallback? onAllCompleted;
 
   const _SetRow({
     required this.set_,
     this.previousSet,
+    this.fallbackSet,
     required this.workoutExerciseId,
     required this.exerciseId,
     required this.workoutId,
+    required this.allSets,
+    this.isLastExercise = false,
+    this.onAllCompleted,
   });
 
   @override
@@ -242,8 +260,8 @@ class _SetRowState extends ConsumerState<_SetRow> {
   @override
   void initState() {
     super.initState();
-    final w = widget.set_.weight ?? widget.previousSet?.weight;
-    final r = widget.set_.reps ?? widget.previousSet?.reps;
+    final w = widget.set_.weight ?? widget.previousSet?.weight ?? widget.fallbackSet?.weight;
+    final r = widget.set_.reps ?? widget.previousSet?.reps ?? widget.fallbackSet?.reps;
     _weightCtrl =
         TextEditingController(text: w != null ? w.toStringAsFixed(1) : '');
     _repsCtrl = TextEditingController(text: r != null ? '$r' : '');
@@ -370,6 +388,13 @@ class _SetRowState extends ConsumerState<_SetRow> {
                         .read(activeWorkoutProvider.notifier)
                         .completeSet(s.id);
                     HapticFeedback.mediumImpact();
+                    // Check if all sets of this exercise are now done
+                    final allDone = widget.allSets.every((set) =>
+                        set.id == s.id || set.isCompleted);
+                    if (allDone && widget.isLastExercise && widget.onAllCompleted != null) {
+                      widget.onAllCompleted!();
+                      return;
+                    }
                     final restSeconds =
                         await ref.read(defaultRestSecondsProvider.future);
                     ref.read(restTimerProvider.notifier).start(restSeconds);
