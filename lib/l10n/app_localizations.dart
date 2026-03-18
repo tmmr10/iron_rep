@@ -140,6 +140,30 @@ abstract class AppLocalizations {
   /// **'Dein Name'**
   String get yourNameHint;
 
+  /// No description provided for @welcomeTagline.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Workout-Tracker für echten Fortschritt.'**
+  String get welcomeTagline;
+
+  /// No description provided for @welcomeFeature1.
+  ///
+  /// In de, this message translates to:
+  /// **'Workouts tracken & Sätze loggen'**
+  String get welcomeFeature1;
+
+  /// No description provided for @welcomeFeature2.
+  ///
+  /// In de, this message translates to:
+  /// **'Fortschritt & persönliche Rekorde'**
+  String get welcomeFeature2;
+
+  /// No description provided for @welcomeFeature3.
+  ///
+  /// In de, this message translates to:
+  /// **'Pläne erstellen & teilen'**
+  String get welcomeFeature3;
+
   /// No description provided for @letsGo.
   ///
   /// In de, this message translates to:
@@ -1394,6 +1418,18 @@ abstract class AppLocalizations {
   /// **'Workout beenden'**
   String get endWorkout;
 
+  /// No description provided for @finishWorkout.
+  ///
+  /// In de, this message translates to:
+  /// **'Workout abschließen'**
+  String get finishWorkout;
+
+  /// No description provided for @switchToGuidedMode.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum geführten Modus wechseln'**
+  String get switchToGuidedMode;
+
   /// No description provided for @discardWorkout.
   ///
   /// In de, this message translates to:
@@ -1619,7 +1655,7 @@ abstract class AppLocalizations {
   /// No description provided for @importPlanShareMessage.
   ///
   /// In de, this message translates to:
-  /// **'Plan in IronRep importieren:\n{url}'**
+  /// **'In IronRep öffnen:\n{url}'**
   String importPlanShareMessage(String url);
 
   /// No description provided for @trainingPlanOptional.
@@ -1723,6 +1759,108 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Wiederholungen'**
   String get reps;
+
+  /// No description provided for @backupData.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten'**
+  String get backupData;
+
+  /// No description provided for @backupExport.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten exportieren'**
+  String get backupExport;
+
+  /// No description provided for @backupImport.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten importieren'**
+  String get backupImport;
+
+  /// No description provided for @backupImportPreview.
+  ///
+  /// In de, this message translates to:
+  /// **'Backup-Vorschau'**
+  String get backupImportPreview;
+
+  /// No description provided for @backupExportedAt.
+  ///
+  /// In de, this message translates to:
+  /// **'Exportiert am {date}'**
+  String backupExportedAt(String date);
+
+  /// No description provided for @backupPlans.
+  ///
+  /// In de, this message translates to:
+  /// **'Pläne'**
+  String get backupPlans;
+
+  /// No description provided for @backupImportPlans.
+  ///
+  /// In de, this message translates to:
+  /// **'Pläne importieren'**
+  String get backupImportPlans;
+
+  /// No description provided for @backupImportWorkouts.
+  ///
+  /// In de, this message translates to:
+  /// **'Workouts importieren'**
+  String get backupImportWorkouts;
+
+  /// No description provided for @backupNoDuplicates.
+  ///
+  /// In de, this message translates to:
+  /// **'Bestehende Daten werden nicht überschrieben. Duplikate werden automatisch erkannt.'**
+  String get backupNoDuplicates;
+
+  /// No description provided for @backupExportProgress.
+  ///
+  /// In de, this message translates to:
+  /// **'Backup wird erstellt...'**
+  String get backupExportProgress;
+
+  /// No description provided for @backupImportProgress.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten werden importiert...'**
+  String get backupImportProgress;
+
+  /// No description provided for @backupImportStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Import starten'**
+  String get backupImportStart;
+
+  /// No description provided for @backupImportSuccess.
+  ///
+  /// In de, this message translates to:
+  /// **'Import abgeschlossen'**
+  String get backupImportSuccess;
+
+  /// No description provided for @backupWorkoutsImported.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Workouts importiert'**
+  String backupWorkoutsImported(int count);
+
+  /// No description provided for @backupPlansImported.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Pläne importiert'**
+  String backupPlansImported(int count);
+
+  /// No description provided for @backupExercisesImported.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Übungen importiert'**
+  String backupExercisesImported(int count);
+
+  /// No description provided for @backupRecordsImported.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Rekorde importiert'**
+  String backupRecordsImported(int count);
 }
 
 class _AppLocalizationsDelegate

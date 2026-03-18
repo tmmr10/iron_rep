@@ -30,6 +30,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourNameHint => 'Your name';
 
   @override
+  String get welcomeTagline => 'Your workout tracker for real progress.';
+
+  @override
+  String get welcomeFeature1 => 'Track workouts & log sets';
+
+  @override
+  String get welcomeFeature2 => 'Progress & personal records';
+
+  @override
+  String get welcomeFeature3 => 'Create & share plans';
+
+  @override
   String get letsGo => 'Let\'s go';
 
   @override
@@ -680,6 +692,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get endWorkout => 'End workout';
 
   @override
+  String get finishWorkout => 'Finish Workout';
+
+  @override
+  String get switchToGuidedMode => 'Switch to Guided Mode';
+
+  @override
   String get discardWorkout => 'Discard workout';
 
   @override
@@ -820,7 +838,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String importPlanShareMessage(String url) {
-    return 'Import plan in IronRep:\n$url';
+    return 'Open in IronRep:\n$url';
   }
 
   @override
@@ -876,4 +894,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reps => 'Reps';
+
+  @override
+  String get backupData => 'Data';
+
+  @override
+  String get backupExport => 'Export data';
+
+  @override
+  String get backupImport => 'Import data';
+
+  @override
+  String get backupImportPreview => 'Backup preview';
+
+  @override
+  String backupExportedAt(String date) {
+    return 'Exported on $date';
+  }
+
+  @override
+  String get backupPlans => 'Plans';
+
+  @override
+  String get backupImportPlans => 'Import plans';
+
+  @override
+  String get backupImportWorkouts => 'Import workouts';
+
+  @override
+  String get backupNoDuplicates =>
+      'Existing data will not be overwritten. Duplicates are detected automatically.';
+
+  @override
+  String get backupExportProgress => 'Creating backup...';
+
+  @override
+  String get backupImportProgress => 'Importing data...';
+
+  @override
+  String get backupImportStart => 'Start import';
+
+  @override
+  String get backupImportSuccess => 'Import completed';
+
+  @override
+  String backupWorkoutsImported(int count) {
+    return '$count workouts imported';
+  }
+
+  @override
+  String backupPlansImported(int count) {
+    return '$count plans imported';
+  }
+
+  @override
+  String backupExercisesImported(int count) {
+    return '$count exercises imported';
+  }
+
+  @override
+  String backupRecordsImported(int count) {
+    return '$count records imported';
+  }
 }

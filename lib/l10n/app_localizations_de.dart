@@ -30,6 +30,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get yourNameHint => 'Dein Name';
 
   @override
+  String get welcomeTagline => 'Dein Workout-Tracker für echten Fortschritt.';
+
+  @override
+  String get welcomeFeature1 => 'Workouts tracken & Sätze loggen';
+
+  @override
+  String get welcomeFeature2 => 'Fortschritt & persönliche Rekorde';
+
+  @override
+  String get welcomeFeature3 => 'Pläne erstellen & teilen';
+
+  @override
   String get letsGo => 'Los geht\'s';
 
   @override
@@ -680,6 +692,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get endWorkout => 'Workout beenden';
 
   @override
+  String get finishWorkout => 'Workout abschließen';
+
+  @override
+  String get switchToGuidedMode => 'Zum geführten Modus wechseln';
+
+  @override
   String get discardWorkout => 'Workout verwerfen';
 
   @override
@@ -820,7 +838,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String importPlanShareMessage(String url) {
-    return 'Plan in IronRep importieren:\n$url';
+    return 'In IronRep öffnen:\n$url';
   }
 
   @override
@@ -876,4 +894,66 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reps => 'Wiederholungen';
+
+  @override
+  String get backupData => 'Daten';
+
+  @override
+  String get backupExport => 'Daten exportieren';
+
+  @override
+  String get backupImport => 'Daten importieren';
+
+  @override
+  String get backupImportPreview => 'Backup-Vorschau';
+
+  @override
+  String backupExportedAt(String date) {
+    return 'Exportiert am $date';
+  }
+
+  @override
+  String get backupPlans => 'Pläne';
+
+  @override
+  String get backupImportPlans => 'Pläne importieren';
+
+  @override
+  String get backupImportWorkouts => 'Workouts importieren';
+
+  @override
+  String get backupNoDuplicates =>
+      'Bestehende Daten werden nicht überschrieben. Duplikate werden automatisch erkannt.';
+
+  @override
+  String get backupExportProgress => 'Backup wird erstellt...';
+
+  @override
+  String get backupImportProgress => 'Daten werden importiert...';
+
+  @override
+  String get backupImportStart => 'Import starten';
+
+  @override
+  String get backupImportSuccess => 'Import abgeschlossen';
+
+  @override
+  String backupWorkoutsImported(int count) {
+    return '$count Workouts importiert';
+  }
+
+  @override
+  String backupPlansImported(int count) {
+    return '$count Pläne importiert';
+  }
+
+  @override
+  String backupExercisesImported(int count) {
+    return '$count Übungen importiert';
+  }
+
+  @override
+  String backupRecordsImported(int count) {
+    return '$count Rekorde importiert';
+  }
 }

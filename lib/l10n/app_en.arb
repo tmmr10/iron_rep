@@ -9,6 +9,10 @@
   "welcomeTitle": "Welcome to IronRep",
   "whatsYourName": "What's your name?",
   "yourNameHint": "Your name",
+  "welcomeTagline": "Your workout tracker for real progress.",
+  "welcomeFeature1": "Track workouts & log sets",
+  "welcomeFeature2": "Progress & personal records",
+  "welcomeFeature3": "Create & share plans",
   "letsGo": "Let's go",
   "later": "Later",
 

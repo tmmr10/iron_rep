@@ -37,9 +37,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     if (mounted) context.go('/workout');
   }
 
-  void _skip() {
-    context.go('/workout');
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -54,18 +52,26 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: IronRepGradients.accent(c),
-                  ),
-                  child: Icon(
-                    Icons.fitness_center,
-                    size: 40,
-                    color: c.background,
+                // App logo
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/icon/icon.png',
+                    width: 100,
+                    height: 100,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: IronRepGradients.accent(c),
+                      ),
+                      child: Icon(
+                        Icons.fitness_center,
+                        size: 48,
+                        color: c.background,
+                      ),
+                    ),
                   ),
                 )
                     .animate()
@@ -104,9 +110,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
                 const SizedBox(height: 12),
 
-                // Subtitle
+                // Tagline
                 Text(
-                  context.l10n.whatsYourName,
+                  context.l10n.welcomeTagline,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
                     color: c.textSecondary,
@@ -115,7 +122,49 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     .animate()
                     .fadeIn(duration: 600.ms, delay: 400.ms),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Feature bullets
+                for (final (i, text) in [
+                  context.l10n.welcomeFeature1,
+                  context.l10n.welcomeFeature2,
+                  context.l10n.welcomeFeature3,
+                ].indexed)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, left: 24),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 20,
+                          color: c.accentGradientStart,
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            text,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: c.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(
+                        duration: 500.ms,
+                        delay: (500 + i * 150).ms,
+                      )
+                      .slideX(
+                        begin: -0.1,
+                        duration: 500.ms,
+                        delay: (500 + i * 150).ms,
+                        curve: Curves.easeOut,
+                      ),
+
+                const SizedBox(height: 24),
 
                 // Name input
                 TextField(
@@ -124,13 +173,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   textCapitalization: TextCapitalization.words,
                   style: TextStyle(color: c.textPrimary),
                   decoration: InputDecoration(
+                    labelText: context.l10n.whatsYourName,
                     hintText: context.l10n.yourNameHint,
                   ),
                   onSubmitted: (_) => _submit(),
                   onChanged: (_) => setState(() {}),
                 )
                     .animate()
-                    .fadeIn(duration: 600.ms, delay: 500.ms),
+                    .fadeIn(duration: 600.ms, delay: 950.ms),
 
                 const SizedBox(height: 24),
 
@@ -155,20 +205,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                   ),
                 )
                     .animate()
-                    .fadeIn(duration: 600.ms, delay: 600.ms),
+                    .fadeIn(duration: 600.ms, delay: 1050.ms),
 
-                const SizedBox(height: 12),
-
-                // Skip
-                TextButton(
-                  onPressed: _skip,
-                  child: Text(
-                    context.l10n.later,
-                    style: TextStyle(color: c.textMuted),
-                  ),
-                )
-                    .animate()
-                    .fadeIn(duration: 600.ms, delay: 700.ms),
               ],
             ),
           ),
