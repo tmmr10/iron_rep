@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/timer_service.dart';
 import 'settings_providers.dart';
 
 class RestTimerState {
@@ -38,6 +39,8 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
       totalSeconds: seconds,
       isRunning: true,
     );
+    // Schedule background notification — fire-and-forget
+    _scheduleNotification(seconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.remainingSeconds <= 1) {
         _timer?.cancel();
@@ -55,15 +58,29 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
 
   void addTime(int seconds) {
     if (!state.isRunning) return;
+    final newRemaining = state.remainingSeconds + seconds;
+    if (newRemaining <= 0) {
+      skip();
+      return;
+    }
     state = RestTimerState(
-      remainingSeconds: state.remainingSeconds + seconds,
+      remainingSeconds: newRemaining,
       totalSeconds: state.totalSeconds + seconds,
       isRunning: true,
     );
+    // Re-schedule notification with updated remaining time
+    _scheduleNotification(newRemaining);
+  }
+
+  Future<void> _scheduleNotification(int seconds) async {
+    try {
+      await TimerService.scheduleTimerEnd(seconds);
+    } catch (_) {}
   }
 
   void skip() {
     _timer?.cancel();
+    TimerService.cancelTimer();
     state = const RestTimerState();
   }
 
