@@ -164,6 +164,18 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               _currentSetIndex = sets.length - 1;
             }
 
+            // If current set is completed, jump to first uncompleted set
+            if (sets.isNotEmpty &&
+                _currentSetIndex < sets.length &&
+                sets[_currentSetIndex].isCompleted) {
+              final nextUncompleted =
+                  sets.indexWhere((s) => !s.isCompleted);
+              if (nextUncompleted != -1) {
+                _currentSetIndex = nextUncompleted;
+                _initialized = false;
+              }
+            }
+
             final currentSet = sets.isNotEmpty &&
                     _currentSetIndex < sets.length
                 ? sets[_currentSetIndex]
@@ -373,10 +385,13 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                                 ? null
                                 : IronRepGradients.accent(c),
                             color: currentSet?.isCompleted ?? false
-                                ? c.success
+                                ? c.accent.withValues(alpha: 0.15)
                                 : null,
                             borderRadius:
                                 BorderRadius.circular(14),
+                            border: currentSet?.isCompleted ?? false
+                                ? Border.all(color: c.accent.withValues(alpha: 0.3))
+                                : null,
                             boxShadow:
                                 currentSet?.isCompleted ?? false
                                     ? null
@@ -398,7 +413,9 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                                   currentSet?.isCompleted ?? false
                                       ? Icons.check_rounded
                                       : Icons.done_rounded,
-                                  color: Colors.black,
+                                  color: currentSet?.isCompleted ?? false
+                                      ? c.accent
+                                      : Colors.black,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
@@ -406,8 +423,10 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                                   currentSet?.isCompleted ?? false
                                       ? context.l10n.setCompleted
                                       : context.l10n.completeSet,
-                                  style: const TextStyle(
-                                    color: Colors.black,
+                                  style: TextStyle(
+                                    color: currentSet?.isCompleted ?? false
+                                        ? c.accent
+                                        : Colors.black,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
                                   ),

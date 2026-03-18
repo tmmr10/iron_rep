@@ -12,6 +12,7 @@ import '../features/exercises/exercise_detail_screen.dart';
 import '../features/exercises/exercises_screen.dart';
 import '../features/plans/plan_editor_screen.dart';
 import '../features/plans/plan_import_screen.dart';
+import '../features/backup/backup_export_screen.dart';
 import '../features/backup/backup_import_screen.dart';
 import '../services/plan_sharing_service.dart';
 import '../features/progress/progress_tab.dart';
@@ -193,6 +194,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return PlanImportScreen(plan: plan);
         },
+      ),
+      GoRoute(
+        path: '/backup-export',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const BackupExportScreen(),
       ),
       GoRoute(
         path: '/backup-import',

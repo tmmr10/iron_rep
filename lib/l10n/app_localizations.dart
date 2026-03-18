@@ -1814,6 +1814,36 @@ abstract class AppLocalizations {
   /// **'Bestehende Daten werden nicht überschrieben. Duplikate werden automatisch erkannt.'**
   String get backupNoDuplicates;
 
+  /// No description provided for @backupExportPreview.
+  ///
+  /// In de, this message translates to:
+  /// **'Daten exportieren'**
+  String get backupExportPreview;
+
+  /// No description provided for @backupExportSelectHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle aus, was du exportieren möchtest.'**
+  String get backupExportSelectHint;
+
+  /// No description provided for @backupExportStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Export starten'**
+  String get backupExportStart;
+
+  /// No description provided for @backupExportSuccess.
+  ///
+  /// In de, this message translates to:
+  /// **'Export abgeschlossen'**
+  String get backupExportSuccess;
+
+  /// No description provided for @backupExportCustomExercises.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigene Übungen'**
+  String get backupExportCustomExercises;
+
   /// No description provided for @backupExportProgress.
   ///
   /// In de, this message translates to:

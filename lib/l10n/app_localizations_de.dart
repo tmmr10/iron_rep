@@ -926,6 +926,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bestehende Daten werden nicht überschrieben. Duplikate werden automatisch erkannt.';
 
   @override
+  String get backupExportPreview => 'Daten exportieren';
+
+  @override
+  String get backupExportSelectHint =>
+      'Wähle aus, was du exportieren möchtest.';
+
+  @override
+  String get backupExportStart => 'Export starten';
+
+  @override
+  String get backupExportSuccess => 'Export abgeschlossen';
+
+  @override
+  String get backupExportCustomExercises => 'Eigene Übungen';
+
+  @override
   String get backupExportProgress => 'Backup wird erstellt...';
 
   @override

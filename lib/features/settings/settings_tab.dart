@@ -1,14 +1,19 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../providers/settings_providers.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/plan_providers.dart';
 import '../../models/enums.dart';
+import '../../services/backup_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/section_header.dart';
 import '../../l10n/l10n_helper.dart';
+import '../../utils/screenshot_tour.dart';
 
 class SettingsTab extends ConsumerWidget {
   const SettingsTab({super.key});
@@ -92,6 +97,22 @@ class SettingsTab extends ConsumerWidget {
               onTap: () => context.push('/exercises'),
             ),
             const SizedBox(height: IronRepSpacing.xl),
+            SectionHeader(title: context.l10n.backupData),
+            _SettingsTile(
+              icon: Icons.upload,
+              title: context.l10n.backupExport,
+              trailing: Icon(Icons.chevron_right,
+                  color: c.textMuted, size: 20),
+              onTap: () => context.push('/backup-export'),
+            ),
+            _SettingsTile(
+              icon: Icons.download,
+              title: context.l10n.backupImport,
+              trailing: Icon(Icons.chevron_right,
+                  color: c.textMuted, size: 20),
+              onTap: () => _importData(context),
+            ),
+            const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.pro),
             _SettingsTile(
               icon: Icons.block,
@@ -119,6 +140,17 @@ class SettingsTab extends ConsumerWidget {
                   color: c.textMuted, size: 20),
               onTap: () => context.push('/licenses'),
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: IronRepSpacing.xl),
+              SectionHeader(title: 'Debug'),
+              _SettingsTile(
+                icon: Icons.camera_alt,
+                title: 'Screenshot Tour',
+                trailing: Icon(Icons.play_arrow,
+                    color: c.accent, size: 20),
+                onTap: () => runScreenshotTour(context, ref),
+              ),
+            ],
           ],
         ),
         loading: () =>
@@ -298,6 +330,127 @@ class SettingsTab extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _exportData(BuildContext context, WidgetRef ref) async {
+    final c = AppColors.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    // Get share position for iPad popover
+    final box = context.findRenderObject() as RenderBox?;
+    final shareOrigin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : const Rect.fromLTWH(0, 0, 100, 100);
+
+    // Show loading overlay
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(40),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: c.accent),
+                const SizedBox(height: 20),
+                Text(
+                  context.l10n.backupExportProgress,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final db = ref.read(databaseProvider);
+      final file = await BackupService.exportToFile(db);
+      if (context.mounted) navigator.pop();
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        sharePositionOrigin: shareOrigin,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        navigator.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.error('$e'))),
+        );
+      }
+    }
+  }
+
+  void _importData(BuildContext context) async {
+    final c = AppColors.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    // Show loading overlay while file picker opens
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(40),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: c.accent),
+                const SizedBox(height: 20),
+                Text(
+                  context.l10n.backupImport,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    const channel = MethodChannel('com.tmmr.iron_rep/backup');
+    try {
+      final path = await channel.invokeMethod<String>('pickBackupFile');
+      if (context.mounted) navigator.pop();
+      if (path != null && context.mounted) {
+        context.push('/backup-import', extra: path);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        navigator.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.error('$e'))),
+        );
+      }
+    }
   }
 
   void _showNameEditor(

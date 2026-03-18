@@ -926,6 +926,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Existing data will not be overwritten. Duplicates are detected automatically.';
 
   @override
+  String get backupExportPreview => 'Export data';
+
+  @override
+  String get backupExportSelectHint => 'Choose what you want to export.';
+
+  @override
+  String get backupExportStart => 'Start export';
+
+  @override
+  String get backupExportSuccess => 'Export completed';
+
+  @override
+  String get backupExportCustomExercises => 'Custom exercises';
+
+  @override
   String get backupExportProgress => 'Creating backup...';
 
   @override
