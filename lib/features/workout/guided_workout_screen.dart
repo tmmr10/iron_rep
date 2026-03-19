@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../database/app_database.dart';
+import '../../providers/database_provider.dart';
 import '../../models/enums.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/plan_providers.dart';
 import '../../providers/timer_providers.dart';
+import '../../services/timer_service.dart';
 import '../../providers/workout_providers.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/tap_scale.dart';
@@ -43,6 +46,8 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
   double _currentWeight = 0;
   int _currentReps = 10;
   bool _initialized = false;
+  bool _completingSet = false;
+  String? _nextExerciseWithWeight;
   late final PageController _pageController;
 
   @override
@@ -135,22 +140,31 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
             // Sync notification info for background notification
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                ref.read(workoutNotificationInfoProvider.notifier).state =
-                    WorkoutNotificationInfo(
+                final info = WorkoutNotificationInfo(
                   exerciseName: exerciseName,
                   currentSetIndex: _currentSetIndex,
                   totalSets: sets.length,
+                  nextExerciseName: nextExerciseName,
                 );
+                ref.read(workoutNotificationInfoProvider.notifier).state = info;
+                if (!ref.read(restTimerProvider).isRunning && !_completingSet) {
+                  TimerService.updateWorkoutActivity(
+                    exerciseName: exerciseName,
+                    nextExerciseName: nextExerciseName,
+                    currentSet: _currentSetIndex + 1,
+                    totalSets: sets.length,
+                  );
+                }
               }
             });
 
-            if (!_initialized && sets.isNotEmpty) {
+            if (!_initialized && sets.isNotEmpty && previousSetsAsync.hasValue) {
               final currentSet = _currentSetIndex < sets.length
                   ? sets[_currentSetIndex]
                   : sets.last;
               final prevSet = _currentSetIndex < prevSets.length
                   ? prevSets[_currentSetIndex]
-                  : null;
+                  : (prevSets.isNotEmpty ? prevSets.last : null);
               _currentWeight = currentSet.weight ??
                   prevSet?.weight ??
                   0;
@@ -194,9 +208,13 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               // Check if there's another set in this exercise
               final nextSetIdx = sets.indexWhere(
                   (s) => !s.isCompleted, _currentSetIndex + 1);
-              final String? nextSetInfo = nextSetIdx != -1
-                  ? context.l10n.setOfTotal(nextSetIdx + 1, sets.length)
-                  : null;
+              String? nextSetInfo;
+              if (nextSetIdx != -1) {
+                final weightStr = _currentWeight > 0
+                    ? ' · ${_currentWeight % 1 == 0 ? _currentWeight.toInt() : _currentWeight}kg'
+                    : '';
+                nextSetInfo = '${context.l10n.setOfTotal(nextSetIdx + 1, sets.length)}$weightStr';
+              }
 
               return Column(
                 children: [
@@ -204,7 +222,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
                   Expanded(
                     child: GuidedRestTimer(
                       nextExerciseName:
-                          nextSetIdx == -1 ? nextExerciseName : null,
+                          nextSetIdx == -1 ? _nextExerciseWithWeight ?? nextExerciseName : null,
                       nextSetInfo: nextSetInfo,
                     ),
                   ),
@@ -215,11 +233,12 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
             return Column(
               children: [
                 _buildHeader(context, c, m, s, exerciseName, muscleColor),
-                const SizedBox(height: 20),
-                // Exercise progress dots
+                const SizedBox(height: 8),
+                // Exercise progress dots with completion status
                 ExerciseProgressDots(
                   total: exercises.length,
                   currentIndex: _currentExerciseIndex,
+                  completedIndices: _getCompletedExerciseIndices(ref, exercises),
                   onTap: (index) {
                     _pageController.animateToPage(
                       index,
@@ -698,6 +717,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
 
   Future<void> _completeSet(WorkoutSet currentSet,
       List<WorkoutSet> sets, List<WorkoutExercise> exercises) async {
+    _completingSet = true;
     final notifier = ref.read(activeWorkoutProvider.notifier);
 
     await notifier.updateSet(
@@ -708,16 +728,20 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     await notifier.completeSet(currentSet.id);
     HapticFeedback.mediumImpact();
 
-    // Check if all sets across ALL exercises are completed
-    final hasMoreSetsInCurrent = sets.any((s) => !s.isCompleted && s.id != currentSet.id);
+    // Check if there are more sets in the current exercise
+    final hasMoreSetsInCurrent = (_currentSetIndex + 1) < sets.length;
 
-    // Check other exercises too
-    bool allExercisesDone = !hasMoreSetsInCurrent;
-    if (allExercisesDone) {
-      for (final ex in exercises) {
-        if (ex.id == exercises[_currentExerciseIndex].id) continue;
-        final otherSets = ref.read(setsForWorkoutExerciseProvider(ex.id)).valueOrNull ?? [];
-        if (otherSets.any((s) => !s.isCompleted)) {
+    // Only check all-done if current exercise is fully completed
+    bool allExercisesDone = false;
+    if (!hasMoreSetsInCurrent) {
+      // Query ALL workout exercises and their sets directly from DB
+      final db = ref.read(databaseProvider);
+      final allWes = await db.workoutDao.getWorkoutExercises(widget.workoutId);
+      allExercisesDone = true;
+      for (final we in allWes) {
+        final weSets = await db.workoutDao.getSetsForWorkoutExercise(we.id);
+        final uncompletedCount = weSets.where((s) => !s.isCompleted && s.id != currentSet.id).length;
+        if (weSets.isEmpty || uncompletedCount > 0) {
           allExercisesDone = false;
           break;
         }
@@ -725,28 +749,100 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     }
 
     if (allExercisesDone) {
+      _completingSet = false;
       _showAllCompletedDialog();
       return;
     }
 
     final restSeconds =
         await ref.read(defaultRestSecondsProvider.future);
-    ref.read(restTimerProvider.notifier).start(restSeconds);
+    final notifInfo = ref.read(workoutNotificationInfoProvider);
+    // Show remaining set info or next exercise name
+    final completedInCurrent = sets.where((s) => s.isCompleted || s.id == currentSet.id).length;
+    final totalInCurrent = sets.length;
+    String? nextName;
+    if (completedInCurrent < totalInCurrent) {
+      // Show next set info with previous set's weight if available
+      final nextSetWeight = _currentWeight > 0
+          ? ' · ${_currentWeight % 1 == 0 ? _currentWeight.toInt() : _currentWeight}kg'
+          : '';
+      nextName = 'Satz ${completedInCurrent + 1} von $totalInCurrent$nextSetWeight';
+    } else {
+      // Find next uncompleted exercise (any direction, not just forward)
+      final nextUncompletedWe = _findNextUncompletedExercise(exercises);
+      if (nextUncompletedWe != null) {
+        final allEx = ref.read(allExercisesProvider).valueOrNull ?? [];
+        final nextEx = allEx.where((e) => e.id == nextUncompletedWe.exerciseId);
+        final nextExName = nextEx.isNotEmpty ? nextEx.first.name : null;
+        if (nextExName != null) {
+          final nextExWeight = await _getLastWeightForExercise(nextUncompletedWe);
+          nextName = nextExWeight != null
+              ? '$nextExName ($nextExWeight)'
+              : nextExName;
+          _nextExerciseWithWeight = nextName;
+        }
+      } else {
+        _nextExerciseWithWeight = null;
+      }
+    }
+    ref.read(restTimerProvider.notifier).start(
+      restSeconds,
+      exerciseName: notifInfo.exerciseName ?? 'Pause',
+      nextExerciseName: nextName,
+    );
+    _completingSet = false;
+  }
+
+  WorkoutExercise? _findNextUncompletedExercise(List<WorkoutExercise> exercises) {
+    // Search forward first, then wrap around
+    for (var offset = 1; offset < exercises.length; offset++) {
+      final idx = (_currentExerciseIndex + offset) % exercises.length;
+      final exSets = ref.read(setsForWorkoutExerciseProvider(exercises[idx].id)).valueOrNull ?? [];
+      if (exSets.any((s) => !s.isCompleted)) {
+        return exercises[idx];
+      }
+    }
+    return null;
+  }
+
+  Future<String?> _getLastWeightForExercise(WorkoutExercise we) async {
+    final db = ref.read(databaseProvider);
+    var prevSets = await db.workoutDao.getPreviousSetsForExercise(
+      we.exerciseId, widget.workoutId,
+    );
+    if (prevSets.isEmpty) {
+      prevSets = await db.workoutDao.getSetsForWorkoutExercise(we.id);
+    }
+    if (prevSets.isEmpty) return null;
+    final weights = prevSets
+        .where((s) => s.weight != null)
+        .map((s) => s.weight!)
+        .toSet()
+        .toList();
+    if (weights.isEmpty) return null;
+    weights.sort();
+    String fmt(double w) => w % 1 == 0 ? '${w.toInt()}' : '$w';
+    if (weights.length == 1) {
+      return '${fmt(weights.first)}kg';
+    }
+    return '${fmt(weights.first)}-${fmt(weights.last)}kg';
+  }
+
+  Set<int> _getCompletedExerciseIndices(WidgetRef ref, List<WorkoutExercise> exercises) {
+    final completed = <int>{};
+    for (var i = 0; i < exercises.length; i++) {
+      final exerciseSets = ref.watch(setsForWorkoutExerciseProvider(exercises[i].id)).valueOrNull ?? [];
+      if (exerciseSets.isNotEmpty && exerciseSets.every((s) => s.isCompleted)) {
+        completed.add(i);
+      }
+    }
+    return completed;
   }
 
   void _resumeIfPaused() {
     final workout = ref.read(activeWorkoutProvider);
     if (workout.isPaused) {
       ref.read(activeWorkoutProvider.notifier).togglePause();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.continueTraining),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 
@@ -777,16 +873,26 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
         _currentSetIndex = nextSetIdx;
       });
     } else {
-      if (_currentExerciseIndex + 1 < exercises.length) {
-        final nextIdx = _currentExerciseIndex + 1;
+      // Find any exercise with uncompleted sets
+      int? nextUncompletedIdx;
+      for (var i = 0; i < exercises.length; i++) {
+        if (i == _currentExerciseIndex) continue;
+        final exSets = ref.read(setsForWorkoutExerciseProvider(exercises[i].id)).valueOrNull ?? [];
+        if (exSets.any((s) => !s.isCompleted)) {
+          nextUncompletedIdx = i;
+          break;
+        }
+      }
+
+      if (nextUncompletedIdx != null) {
         setState(() {
-          _currentExerciseIndex = nextIdx;
+          _currentExerciseIndex = nextUncompletedIdx!;
           _currentSetIndex = 0;
           _initialized = false;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_pageController.hasClients) {
-            _pageController.jumpToPage(nextIdx);
+            _pageController.jumpToPage(nextUncompletedIdx!);
           }
         });
       } else {

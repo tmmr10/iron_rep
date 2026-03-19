@@ -38,6 +38,7 @@ class MainActivity : FlutterActivity() {
         const val WORKOUT_CHANNEL_ID = "workout_ongoing"
         const val TIMER_NOTIFICATION_ID = 1
         const val WORKOUT_NOTIFICATION_ID = 2
+        const val COUNTDOWN_NOTIFICATION_ID = 3
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -71,8 +72,10 @@ class MainActivity : FlutterActivity() {
                         val seconds = args?.get("seconds") as? Int
                         val title = args?.get("title") as? String
                         val body = args?.get("body") as? String
+                        val exerciseName = args?.get("exerciseName") as? String
+                        val nextExerciseName = args?.get("nextExerciseName") as? String
                         if (seconds != null && title != null && body != null) {
-                            scheduleTimer(seconds, title, body)
+                            scheduleTimer(seconds, title, body, exerciseName, nextExerciseName)
                             result.success(true)
                         } else {
                             result.error("BAD_ARGS", "Missing arguments", null)
@@ -86,8 +89,10 @@ class MainActivity : FlutterActivity() {
                         val args = call.arguments as? Map<*, *>
                         val title = args?.get("title") as? String
                         val body = args?.get("body") as? String
+                        val startedAtMs = args?.get("startedAtMs") as? Long
+                            ?: (args?.get("startedAtMs") as? Int)?.toLong()
                         if (title != null && body != null) {
-                            showOngoingNotification(title, body)
+                            showOngoingNotification(title, body, startedAtMs)
                             result.success(true)
                         } else {
                             result.error("BAD_ARGS", "Missing arguments", null)
@@ -162,9 +167,18 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun scheduleTimer(seconds: Int, title: String, body: String) {
+    private fun scheduleTimer(seconds: Int, title: String, body: String, exerciseName: String?, nextExerciseName: String?) {
         cancelTimer()
 
+        // Dismiss ongoing workout notification while countdown is active
+        dismissOngoingNotification()
+
+        // Show ongoing notification with live countdown chronometer
+        val countdownTitle = exerciseName ?: "Pause"
+        val countdownBody = if (!nextExerciseName.isNullOrEmpty()) "Nächste: $nextExerciseName" else null
+        showCountdownNotification(seconds, countdownTitle, countdownBody)
+
+        // Schedule the alert notification for when timer expires
         timerRunnable = Runnable {
             showTimerNotification(title, body)
         }
@@ -175,6 +189,40 @@ class MainActivity : FlutterActivity() {
         timerRunnable?.let { handler.removeCallbacks(it) }
         timerRunnable = null
         NotificationManagerCompat.from(this).cancel(TIMER_NOTIFICATION_ID)
+        NotificationManagerCompat.from(this).cancel(COUNTDOWN_NOTIFICATION_ID)
+    }
+
+    private fun showCountdownNotification(seconds: Int, title: String, subtitle: String?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val endTimeMs = System.currentTimeMillis() + seconds * 1000L
+        val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+        val builder = NotificationCompat.Builder(this, TIMER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
+            .setColor(0xFF000000.toInt())
+            .setContentTitle(title)
+            .setContentIntent(launchIntent("/active-workout"))
+            .setOngoing(true)
+            .setSilent(true)
+            .setUsesChronometer(true)
+            .setWhen(endTimeMs)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        if (subtitle != null) {
+            builder.setContentText(subtitle)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            builder.setChronometerCountDown(true)
+        }
+
+        NotificationManagerCompat.from(this).notify(COUNTDOWN_NOTIFICATION_ID, builder.build())
     }
 
     private fun launchIntent(route: String? = null): PendingIntent {
@@ -189,6 +237,9 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun showTimerNotification(title: String, body: String) {
+        // Dismiss the countdown notification first
+        NotificationManagerCompat.from(this).cancel(COUNTDOWN_NOTIFICATION_ID)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -212,7 +263,7 @@ class MainActivity : FlutterActivity() {
         NotificationManagerCompat.from(this).notify(TIMER_NOTIFICATION_ID, notification)
     }
 
-    private fun showOngoingNotification(title: String, body: String) {
+    private fun showOngoingNotification(title: String, body: String, startedAtMs: Long? = null) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -221,7 +272,7 @@ class MainActivity : FlutterActivity() {
         }
 
         val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
-        val notification = NotificationCompat.Builder(this, WORKOUT_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, WORKOUT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setLargeIcon(largeIcon)
             .setColor(0xFF000000.toInt())
@@ -231,9 +282,14 @@ class MainActivity : FlutterActivity() {
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
 
-        NotificationManagerCompat.from(this).notify(WORKOUT_NOTIFICATION_ID, notification)
+        // Show live chronometer counting up from workout start
+        if (startedAtMs != null) {
+            builder.setUsesChronometer(true)
+            builder.setWhen(startedAtMs)
+        }
+
+        NotificationManagerCompat.from(this).notify(WORKOUT_NOTIFICATION_ID, builder.build())
     }
 
     private fun dismissOngoingNotification() {

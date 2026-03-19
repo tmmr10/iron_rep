@@ -239,7 +239,7 @@ class MainShell extends StatelessWidget {
         children: [
           const AdBannerWidget(),
           Container(
-            margin: const EdgeInsets.fromLTRB(32, 8, 32, 24),
+            margin: EdgeInsets.fromLTRB(32, 8, 32, MediaQuery.of(context).padding.bottom + 8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: c.card,

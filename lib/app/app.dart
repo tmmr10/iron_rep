@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/settings_providers.dart';
+import '../providers/timer_providers.dart';
 import '../providers/workout_providers.dart';
 import '../services/plan_sharing_service.dart';
 import '../services/timer_service.dart';
@@ -52,21 +55,11 @@ class _IronRepAppState extends ConsumerState<IronRepApp>
     _backupChannel.setMethodCallHandler(_handleBackupChannel);
     TimerService.onNavigateTo = (route) {
       final router = ref.read(routerProvider);
-      // Resume workout if paused when navigating back from notification
-      if (route == '/active-workout') {
-        final workout = ref.read(activeWorkoutProvider);
-        if (workout.isActive && workout.isPaused) {
-          ref.read(activeWorkoutProvider.notifier).togglePause();
-          _scaffoldMessengerKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text('Training fortgesetzt'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+      // Navigate to workout screen without auto-resuming
+      final currentLocation = router.routerDelegate.currentConfiguration.last.matchedLocation;
+      if (currentLocation != route) {
+        router.push(route);
       }
-      router.go(route);
     };
   }
 
@@ -89,33 +82,79 @@ class _IronRepAppState extends ConsumerState<IronRepApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _showWorkoutNotificationIfActive();
+      _ensureLiveActivityIfActive();
     } else if (state == AppLifecycleState.resumed) {
-      TimerService.dismissWorkoutNotification();
+      final workout = ref.read(activeWorkoutProvider);
+      // Don't dismiss notification if paused (keep showing "Training pausiert")
+      if (!workout.isPaused) {
+        TimerService.dismissWorkoutNotification();
+      }
+      // Sync rest timer with real clock after background
+      ref.read(restTimerProvider.notifier).syncWithClock();
     }
   }
 
-  void _showWorkoutNotificationIfActive() {
+  void _ensureLiveActivityIfActive() {
     final workout = ref.read(activeWorkoutProvider);
     if (!workout.isActive) return;
 
     final info = ref.read(workoutNotificationInfoProvider);
-    final elapsed = workout.elapsed;
-    final m = elapsed.inMinutes;
-    final s = elapsed.inSeconds % 60;
-    final timeStr = '${m}m ${s.toString().padLeft(2, '0')}s';
+    // Re-start Live Activity if it was dismissed by the user
+    TimerService.startWorkoutActivity(
+      workoutName: workout.planName ?? 'Training',
+      startedAtMs: workout.startedAt?.millisecondsSinceEpoch,
+    ).then((_) {
+      if (info.exerciseName != null) {
+        TimerService.updateWorkoutActivity(
+          exerciseName: info.exerciseName!,
+          nextExerciseName: info.nextExerciseName,
+          currentSet: info.currentSetIndex + 1,
+          totalSets: info.totalSets,
+        );
+      }
+    });
+  }
+
+  void _showWorkoutNotificationIfActive() {
+    // On iOS, Live Activity handles everything — no regular notification needed
+    if (Platform.isIOS) return;
+    final workout = ref.read(activeWorkoutProvider);
+    if (!workout.isActive) return;
+    // Don't show ongoing notification while rest timer is active (avoid duplicate)
+    if (ref.read(restTimerProvider).isRunning) return;
+
+    // If paused, show paused notification without chronometer
+    if (workout.isPaused) {
+      final elapsed = workout.elapsed;
+      final m = elapsed.inMinutes;
+      final s = elapsed.inSeconds % 60;
+      TimerService.showWorkoutNotification(
+        title: 'Training pausiert',
+        body: '${m}m ${s.toString().padLeft(2, '0')}s',
+      );
+      return;
+    }
+
+    final info = ref.read(workoutNotificationInfoProvider);
 
     String title;
     String body;
 
     if (info.exerciseName != null && info.totalSets > 0) {
-      title = info.exerciseName!;
-      body = 'Satz ${info.currentSetIndex + 1}/${info.totalSets} · $timeStr';
+      title = '${info.exerciseName} · Satz ${info.currentSetIndex + 1}/${info.totalSets}';
+      body = info.nextExerciseName != null
+          ? 'Nächste: ${info.nextExerciseName}'
+          : 'Letzte Übung';
     } else {
       title = 'Training';
-      body = 'Aktiv · $timeStr';
+      body = workout.planName ?? 'Aktiv';
     }
 
-    TimerService.showWorkoutNotification(title: title, body: body);
+    TimerService.showWorkoutNotification(
+      title: title,
+      body: body,
+      startedAtMs: workout.startedAt?.millisecondsSinceEpoch,
+    );
   }
 
   @override

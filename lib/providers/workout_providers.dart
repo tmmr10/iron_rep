@@ -1,23 +1,28 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/app_database.dart';
 import '../models/workout_history_item.dart';
 import '../models/workout_summary.dart';
 import '../services/timer_service.dart';
 import 'database_provider.dart';
+import 'timer_providers.dart';
 
 // Notification info for background workout notification
 class WorkoutNotificationInfo {
   final String? exerciseName;
   final int currentSetIndex;
   final int totalSets;
+  final String? nextExerciseName;
 
   const WorkoutNotificationInfo({
     this.exerciseName,
     this.currentSetIndex = 0,
     this.totalSets = 0,
+    this.nextExerciseName,
   });
 }
 
@@ -43,7 +48,10 @@ class ActiveWorkoutState {
     this.isPaused = false,
     this.elapsed = Duration.zero,
     this.workoutExerciseIds = const [],
+    this.startedAt,
   });
+
+  final DateTime? startedAt;
 
   ActiveWorkoutState copyWith({
     int? workoutId,
@@ -53,6 +61,7 @@ class ActiveWorkoutState {
     bool? isPaused,
     Duration? elapsed,
     List<int>? workoutExerciseIds,
+    DateTime? startedAt,
   }) {
     return ActiveWorkoutState(
       workoutId: workoutId ?? this.workoutId,
@@ -62,16 +71,34 @@ class ActiveWorkoutState {
       isPaused: isPaused ?? this.isPaused,
       elapsed: elapsed ?? this.elapsed,
       workoutExerciseIds: workoutExerciseIds ?? this.workoutExerciseIds,
+      startedAt: startedAt ?? this.startedAt,
     );
   }
 }
 
+/// Set to true when Live Activity is disabled and user hasn't been warned yet
+final liveActivityDisabledWarningProvider = StateProvider<bool>((ref) => false);
+
 class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
   final AppDatabase _db;
+  final Ref _ref;
   Timer? _timer;
 
-  ActiveWorkoutNotifier(this._db) : super(const ActiveWorkoutState()) {
+  ActiveWorkoutNotifier(this._db, this._ref) : super(const ActiveWorkoutState()) {
     _checkForActiveWorkout();
+  }
+
+  Future<void> _checkLiveActivityPermission() async {
+    if (!Platform.isIOS) return;
+    final enabled = await TimerService.isLiveActivityEnabled();
+    if (!enabled) {
+      final prefs = await SharedPreferences.getInstance();
+      final warned = prefs.getBool('liveActivityWarningShown') ?? false;
+      if (!warned) {
+        _ref.read(liveActivityDisabledWarningProvider.notifier).state = true;
+        await prefs.setBool('liveActivityWarningShown', true);
+      }
+    }
   }
 
   Future<void> _checkForActiveWorkout() async {
@@ -91,8 +118,43 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
         planName: planName ?? active.name,
         isActive: true,
         elapsed: elapsed,
+        startedAt: active.startedAt,
       );
       _startTimer();
+      TimerService.startWorkoutActivity(
+        workoutName: planName ?? active.name ?? 'Training',
+        startedAtMs: active.startedAt.millisecondsSinceEpoch,
+      );
+      // Load current exercise info for Live Activity
+      _updateLiveActivityWithCurrentExercise(active.id);
+    }
+  }
+
+  Future<void> _updateLiveActivityWithCurrentExercise(int workoutId) async {
+    final exercises = await _db.workoutDao.getWorkoutExercises(workoutId);
+    final allExercises = await _db.exerciseDao.getAll();
+    for (var i = 0; i < exercises.length; i++) {
+      final we = exercises[i];
+      final sets = await _db.workoutDao.getSetsForWorkoutExercise(we.id);
+      final completedCount = sets.where((s) => s.isCompleted == true).length;
+      if (completedCount < sets.length) {
+        final exercise = allExercises.where((e) => e.id == we.exerciseId);
+        final name = exercise.isNotEmpty ? exercise.first.name : null;
+        String? nextName;
+        for (var j = i + 1; j < exercises.length; j++) {
+          final nextEx = allExercises.where((e) => e.id == exercises[j].exerciseId);
+          if (nextEx.isNotEmpty) { nextName = nextEx.first.name; break; }
+        }
+        if (name != null) {
+          TimerService.updateWorkoutActivity(
+            exerciseName: name,
+            nextExerciseName: nextName,
+            currentSet: completedCount + 1,
+            totalSets: sets.length,
+          );
+        }
+        return;
+      }
     }
   }
 
@@ -106,7 +168,13 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
   }
 
   void togglePause() {
-    state = state.copyWith(isPaused: !state.isPaused);
+    final wasPaused = state.isPaused;
+    state = state.copyWith(isPaused: !wasPaused);
+    if (!wasPaused) {
+      TimerService.pauseWorkoutActivity(elapsedSeconds: state.elapsed.inSeconds);
+    } else {
+      TimerService.resumeWorkoutActivity(elapsedSeconds: state.elapsed.inSeconds);
+    }
   }
 
   Future<void> preparePlan(int planId) async {
@@ -126,6 +194,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       final plan = await _db.planDao.getPlan(planId);
       planName = plan.name;
     }
+    final now = DateTime.now();
     final id = await _db.workoutDao.startWorkout(
         name: planName, planId: planId);
     state = ActiveWorkoutState(
@@ -134,8 +203,15 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       planName: planName,
       isActive: true,
       elapsed: Duration.zero,
+      startedAt: now,
     );
     _startTimer();
+    TimerService.startWorkoutActivity(
+      workoutName: planName ?? 'Training',
+      startedAtMs: now.millisecondsSinceEpoch,
+    );
+    // Check Live Activity permission
+    _checkLiveActivityPermission();
 
     // If starting from a plan, pre-load exercises with target sets
     if (planId != null) {
@@ -155,8 +231,20 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     if (state.workoutId == null) return;
     final weId = await _db.workoutDao
         .addExerciseToWorkout(state.workoutId!, exerciseId);
-    // Auto-add first set
-    await _db.workoutDao.addSet(weId);
+    // If workout is from a plan, use the plan's target sets for this exercise
+    int targetSets = 1;
+    if (state.planId != null) {
+      final planExercises = await _db.planDao.getPlanExercises(state.planId!);
+      final match = planExercises.where((pe) => pe.exerciseId == exerciseId);
+      if (match.isNotEmpty) {
+        targetSets = match.first.targetSets;
+      }
+    }
+    // Default to 3 sets if not from plan
+    if (targetSets <= 1 && state.planId == null) targetSets = 3;
+    for (var i = 0; i < targetSets; i++) {
+      await _db.workoutDao.addSet(weId);
+    }
   }
 
   Future<void> removeExercise(int workoutExerciseId) async {
@@ -221,7 +309,9 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 
     await _db.workoutDao.finishWorkout(workoutId);
     _timer?.cancel();
+    _ref.read(restTimerProvider.notifier).skip();
     TimerService.dismissWorkoutNotification();
+    TimerService.endWorkoutActivity();
 
     final workout = await (_db.select(_db.workouts)
           ..where((t) => t.id.equals(workoutId)))
@@ -248,7 +338,9 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     if (state.workoutId == null) return;
     await _db.workoutDao.cancelWorkout(state.workoutId!);
     _timer?.cancel();
+    _ref.read(restTimerProvider.notifier).skip();
     TimerService.dismissWorkoutNotification();
+    TimerService.endWorkoutActivity();
     state = const ActiveWorkoutState();
   }
 
@@ -262,7 +354,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 final activeWorkoutProvider =
     StateNotifierProvider<ActiveWorkoutNotifier, ActiveWorkoutState>((ref) {
   final db = ref.watch(databaseProvider);
-  return ActiveWorkoutNotifier(db);
+  return ActiveWorkoutNotifier(db, ref);
 });
 
 // Plan exercises with names (for pre-start view)

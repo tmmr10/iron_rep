@@ -1661,13 +1661,13 @@ abstract class AppLocalizations {
   /// No description provided for @trainingPlanOptional.
   ///
   /// In de, this message translates to:
-  /// **'Trainingsplan (optional)'**
+  /// **'Workout (optional)'**
   String get trainingPlanOptional;
 
   /// No description provided for @noPlan.
   ///
   /// In de, this message translates to:
-  /// **'Kein Plan'**
+  /// **'Kein Workout'**
   String get noPlan;
 
   /// No description provided for @dateLabel.

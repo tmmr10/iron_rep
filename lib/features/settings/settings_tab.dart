@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/plan_providers.dart';
 import '../../models/enums.dart';
 import '../../services/backup_service.dart';
+import '../../services/timer_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/section_header.dart';
 import '../../shared/widgets/tap_scale.dart';
@@ -94,6 +97,11 @@ class SettingsTab extends ConsumerWidget {
                 ),
               ],
             ),
+            if (Platform.isIOS) ...[
+              const SizedBox(height: IronRepSpacing.xl),
+              SectionHeader(title: 'Live Activity'),
+              _LiveActivityStatus(),
+            ],
             const SizedBox(height: IronRepSpacing.xl),
             SectionHeader(title: context.l10n.plansAndExercises),
             _SettingsGroup(
@@ -662,6 +670,64 @@ class _SettingsTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LiveActivityStatus extends StatefulWidget {
+  @override
+  State<_LiveActivityStatus> createState() => _LiveActivityStatusState();
+}
+
+class _LiveActivityStatusState extends State<_LiveActivityStatus> {
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final enabled = await TimerService.isLiveActivityEnabled();
+    if (mounted) setState(() => _enabled = enabled);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final colors = AppColors.of(context);
+    return _SettingsGroup(
+      tiles: [
+        _SettingsTile(
+          icon: _enabled == true ? Icons.check_circle_outline : Icons.info_outline,
+          iconColor: _enabled == true ? colors.accent : colors.textSecondary,
+          title: 'Live Activity',
+          trailing: Text(
+            _enabled == null ? '...' : (_enabled! ? 'Aktiviert' : 'Deaktiviert'),
+            style: TextStyle(color: _enabled == true ? colors.accent : colors.textSecondary),
+          ),
+          onTap: _enabled == false ? () {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: colors.surface,
+                title: Text('Live Activity deaktiviert', style: TextStyle(color: colors.textPrimary)),
+                content: Text(
+                  'Aktiviere Live Activities in den iOS-Einstellungen unter Iron Rep, um den Timer auf dem Sperrbildschirm zu sehen.',
+                  style: TextStyle(color: colors.textSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } : null,
+        ),
+      ],
     );
   }
 }

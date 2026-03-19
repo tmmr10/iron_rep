@@ -214,7 +214,7 @@ class _WorkoutCalendarState extends ConsumerState<WorkoutCalendar> {
               final isSelected = isSameDay(_selectedDay, date);
               if (isSelected) return null;
               return Positioned(
-                bottom: 4,
+                bottom: 1,
                 child: Container(
                   width: 5,
                   height: 5,

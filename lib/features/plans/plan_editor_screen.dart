@@ -563,15 +563,15 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       final ex = entry.value;
       return '$i. ${ex.name} — ${ex.targetSets} ${context.l10n.sets}';
     }).join('\n');
-    final deepLink = 'ironrep://plan/$encoded';
+    final shareUrl = PlanSharingService.buildShareUrl(encoded);
     final message = '💪 $planName\n'
         '${context.l10n.exercisesCount(_exercises.length, totalSets)}\n\n'
         '$exerciseLines\n\n'
-        '👉 ${context.l10n.importPlanShareMessage(deepLink)}';
+        'Trainingsplan importieren:\n$shareUrl';
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(
       message,
-      subject: '$planName — IronRep Trainingsplan',
+      subject: '$planName — IronRep',
       sharePositionOrigin:
           box != null ? box.localToGlobal(Offset.zero) & box.size : null,
     );

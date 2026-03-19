@@ -842,10 +842,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get trainingPlanOptional => 'Trainingsplan (optional)';
+  String get trainingPlanOptional => 'Workout (optional)';
 
   @override
-  String get noPlan => 'Kein Plan';
+  String get noPlan => 'Kein Workout';
 
   @override
   String get dateLabel => 'Datum';

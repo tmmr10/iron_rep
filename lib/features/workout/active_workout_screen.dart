@@ -7,6 +7,8 @@ import '../../providers/database_provider.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/plan_providers.dart';
 import '../../providers/workout_providers.dart';
+import '../../providers/timer_providers.dart';
+import '../../services/timer_service.dart';
 import '../../l10n/l10n_helper.dart';
 import '../../shared/design_system.dart';
 import '../plans/exercise_picker_sheet.dart';
@@ -46,16 +48,29 @@ final _listModeNotificationInfoProvider =
   final exercises = await db.workoutDao.getWorkoutExercises(workoutId);
   final allExercises = await db.exerciseDao.getAll();
 
-  for (final we in exercises) {
+  for (var i = 0; i < exercises.length; i++) {
+    final we = exercises[i];
     final sets = await db.workoutDao.getSetsForWorkoutExercise(we.id);
     final completedCount = sets.where((s) => s.isCompleted == true).length;
     if (completedCount < sets.length) {
       final exercise = allExercises.where((e) => e.id == we.exerciseId);
       final name = exercise.isNotEmpty ? exercise.first.name : null;
+
+      // Find next exercise name
+      String? nextName;
+      for (var j = i + 1; j < exercises.length; j++) {
+        final nextEx = allExercises.where((e) => e.id == exercises[j].exerciseId);
+        if (nextEx.isNotEmpty) {
+          nextName = nextEx.first.name;
+          break;
+        }
+      }
+
       return WorkoutNotificationInfo(
         exerciseName: name,
         currentSetIndex: completedCount,
         totalSets: sets.length,
+        nextExerciseName: nextName,
       );
     }
   }
@@ -75,6 +90,20 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     final state = ref.watch(activeWorkoutProvider);
     final workoutId = state.workoutId;
 
+    // Show one-time warning if Live Activity is disabled
+    ref.listen(liveActivityDisabledWarningProvider, (prev, next) {
+      if (next == true) {
+        ref.read(liveActivityDisabledWarningProvider.notifier).state = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Live Activity ist deaktiviert. Aktiviere sie in den iOS-Einstellungen für den Timer auf dem Sperrbildschirm.'),
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
     // Pre-start view: plan selected but workout not yet started
     if (workoutId == null && state.planId != null) {
       return _PreStartView(state: state);
@@ -93,7 +122,13 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                     IconButton(
                       icon: Icon(Icons.arrow_back_ios_new,
                           size: 18, color: c.textSecondary),
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                     ),
                   ],
                 ),
@@ -158,6 +193,14 @@ class _ListModeScreen extends ConsumerWidget {
     if (notifData != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(workoutNotificationInfoProvider.notifier).state = notifData;
+        if (notifData.exerciseName != null && !ref.read(restTimerProvider).isRunning) {
+          TimerService.updateWorkoutActivity(
+            exerciseName: notifData.exerciseName!,
+            nextExerciseName: notifData.nextExerciseName,
+            currentSet: notifData.currentSetIndex + 1,
+            totalSets: notifData.totalSets,
+          );
+        }
       });
     }
 
@@ -173,7 +216,13 @@ class _ListModeScreen extends ConsumerWidget {
                   IconButton(
                     icon: Icon(Icons.arrow_back_ios_new,
                         size: 18, color: c.textSecondary),
-                    onPressed: () => context.pop(),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                   ),
                   Expanded(
                     child: Column(
@@ -629,7 +678,13 @@ class _PreStartView extends ConsumerWidget {
                   IconButton(
                     icon: Icon(Icons.arrow_back_ios_new,
                         size: 18, color: c.textSecondary),
-                    onPressed: () => context.pop(),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                   ),
                   Expanded(
                     child: Text(

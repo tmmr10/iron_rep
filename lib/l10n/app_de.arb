@@ -396,8 +396,8 @@
       "url": {"type": "String"}
     }
   },
-  "trainingPlanOptional": "Trainingsplan (optional)",
-  "noPlan": "Kein Plan",
+  "trainingPlanOptional": "Workout (optional)",
+  "noPlan": "Kein Workout",
   "dateLabel": "Datum",
   "startTime": "Startzeit",
   "durationMinutes": "Dauer: {minutes} Minuten",

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,26 +30,48 @@ class RestTimerState {
 
 class RestTimerNotifier extends StateNotifier<RestTimerState> {
   Timer? _timer;
+  String _exerciseName = 'Pause';
+  String? _nextExerciseName;
+  DateTime? _endTime;
 
   RestTimerNotifier() : super(const RestTimerState());
 
-  void start(int seconds) {
+  void start(int seconds, {String exerciseName = 'Pause', String? nextExerciseName}) {
     _timer?.cancel();
+    _endTime = DateTime.now().add(Duration(seconds: seconds));
     state = RestTimerState(
       remainingSeconds: seconds,
       totalSeconds: seconds,
       isRunning: true,
     );
+    _exerciseName = exerciseName;
+    _nextExerciseName = nextExerciseName;
     // Schedule background notification — fire-and-forget
-    _scheduleNotification(seconds);
+    _scheduleNotification(seconds, exerciseName: exerciseName, nextExerciseName: nextExerciseName);
+    // Dismiss workout notification while countdown is active (avoid double notification)
+    TimerService.dismissWorkoutNotification();
+    // Start live timer (Live Activity on iOS, chronometer handled by scheduleTimer on Android)
+    TimerService.startLiveTimer(
+      seconds: seconds,
+      exerciseName: exerciseName,
+      nextExerciseName: nextExerciseName,
+    );
+    _startTicking();
+  }
+
+  void _startTicking() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.remainingSeconds <= 1) {
+      final remaining = _endTime!.difference(DateTime.now()).inSeconds;
+      if (remaining <= 0) {
         _timer?.cancel();
+        _endTime = null;
         HapticFeedback.heavyImpact();
+        TimerService.endLiveTimer();
         state = const RestTimerState();
       } else {
         state = RestTimerState(
-          remainingSeconds: state.remainingSeconds - 1,
+          remainingSeconds: remaining,
           totalSeconds: state.totalSeconds,
           isRunning: true,
         );
@@ -56,9 +79,29 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
     });
   }
 
+  /// Call when app resumes from background to sync timer with real clock
+  void syncWithClock() {
+    if (!state.isRunning || _endTime == null) return;
+    final remaining = _endTime!.difference(DateTime.now()).inSeconds;
+    if (remaining <= 0) {
+      _timer?.cancel();
+      _endTime = null;
+      HapticFeedback.heavyImpact();
+      TimerService.endLiveTimer();
+      state = const RestTimerState();
+    } else {
+      state = RestTimerState(
+        remainingSeconds: remaining,
+        totalSeconds: state.totalSeconds,
+        isRunning: true,
+      );
+    }
+  }
+
   void addTime(int seconds) {
-    if (!state.isRunning) return;
-    final newRemaining = state.remainingSeconds + seconds;
+    if (!state.isRunning || _endTime == null) return;
+    _endTime = _endTime!.add(Duration(seconds: seconds));
+    final newRemaining = _endTime!.difference(DateTime.now()).inSeconds;
     if (newRemaining <= 0) {
       skip();
       return;
@@ -68,19 +111,27 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
       totalSeconds: state.totalSeconds + seconds,
       isRunning: true,
     );
-    // Re-schedule notification with updated remaining time
-    _scheduleNotification(newRemaining);
+    _scheduleNotification(newRemaining, exerciseName: _exerciseName, nextExerciseName: _nextExerciseName);
+    TimerService.startLiveTimer(seconds: newRemaining, exerciseName: _exerciseName, nextExerciseName: _nextExerciseName);
   }
 
-  Future<void> _scheduleNotification(int seconds) async {
+  Future<void> _scheduleNotification(int seconds, {String exerciseName = 'Pause', String? nextExerciseName}) async {
+    // On iOS, Live Activity handles the timer display — no regular notification needed
+    if (Platform.isIOS) return;
     try {
-      await TimerService.scheduleTimerEnd(seconds);
+      await TimerService.scheduleTimerEnd(
+        seconds,
+        exerciseName: exerciseName,
+        nextExerciseName: nextExerciseName,
+      );
     } catch (_) {}
   }
 
   void skip() {
     _timer?.cancel();
+    _endTime = null;
     TimerService.cancelTimer();
+    TimerService.endLiveTimer();
     state = const RestTimerState();
   }
 

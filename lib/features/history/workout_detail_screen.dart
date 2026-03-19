@@ -810,17 +810,24 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             Expanded(
               child: TextField(
                 controller: TextEditingController(
-                    text: weight?.toStringAsFixed(1) ?? ''),
+                    text: weight != null && weight > 0
+                        ? (weight == weight.roundToDouble()
+                            ? weight.toInt().toString()
+                            : weight.toString())
+                        : ''),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                  hintText: '0.0',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  filled: false,
+                  border: UnderlineInputBorder(borderSide: BorderSide(color: c.border)),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accent)),
+                  hintText: 'kg',
                   hintStyle: TextStyle(color: c.textMuted),
                   suffixText: 'kg',
                   suffixStyle: TextStyle(color: c.textMuted, fontSize: 12),
@@ -832,7 +839,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ),
                 onChanged: (v) {
                   _editedSets[s.id] = (_editedSets[s.id] ?? _EditedSet())
-                      .copyWith(weight: double.tryParse(v));
+                      .copyWith(weight: double.tryParse(v.replaceAll(',', '.')));
                 },
               ),
             ),
@@ -856,9 +863,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                  hintText: '0',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  filled: false,
+                  border: UnderlineInputBorder(borderSide: BorderSide(color: c.border)),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accent)),
+                  hintText: 'Wdh',
                   hintStyle: TextStyle(color: c.textMuted),
                 ),
                 style: TextStyle(
@@ -948,13 +958,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                  hintText: '0.0',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  filled: false,
+                  border: UnderlineInputBorder(borderSide: BorderSide(color: c.border)),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accent)),
+                  hintText: 'kg',
                   hintStyle: TextStyle(color: c.textMuted),
                   suffixText: 'kg',
                   suffixStyle: TextStyle(color: c.textMuted, fontSize: 12),
@@ -964,7 +977,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
-                onChanged: (v) => ns.weight = double.tryParse(v),
+                onChanged: (v) => ns.weight = double.tryParse(v.replaceAll(',', '.')),
               ),
             ),
             Padding(
@@ -985,9 +998,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ],
                 decoration: InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                  hintText: '0',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  filled: false,
+                  border: UnderlineInputBorder(borderSide: BorderSide(color: c.border)),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accent)),
+                  hintText: 'Wdh',
                   hintStyle: TextStyle(color: c.textMuted),
                 ),
                 style: TextStyle(

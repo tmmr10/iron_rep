@@ -5,12 +5,14 @@ import '../../../shared/design_system.dart';
 class ExerciseProgressDots extends StatelessWidget {
   final int total;
   final int currentIndex;
+  final Set<int> completedIndices;
   final ValueChanged<int>? onTap;
 
   const ExerciseProgressDots({
     super.key,
     required this.total,
     required this.currentIndex,
+    this.completedIndices = const {},
     this.onTap,
   });
 
@@ -24,12 +26,11 @@ class ExerciseProgressDots extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(total, (index) {
           final isCurrent = index == currentIndex;
-          final isDone = index < currentIndex;
+          final isDone = completedIndices.contains(index);
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onTap != null ? () => onTap!(index) : null,
-            // Min 44px touch target per Apple HIG
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
               child: SizedBox(
@@ -51,6 +52,9 @@ class ExerciseProgressDots extends StatelessWidget {
                           : Border.all(color: c.border, width: 1.5),
                       borderRadius: BorderRadius.circular(6),
                     ),
+                    child: isDone && !isCurrent
+                        ? Icon(Icons.check, size: 8, color: Colors.white)
+                        : null,
                   ),
                 ),
               ),

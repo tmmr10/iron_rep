@@ -397,7 +397,12 @@ class _SetRowState extends ConsumerState<_SetRow> {
                     }
                     final restSeconds =
                         await ref.read(defaultRestSecondsProvider.future);
-                    ref.read(restTimerProvider.notifier).start(restSeconds);
+                    final notifInfo = ref.read(workoutNotificationInfoProvider);
+                    ref.read(restTimerProvider.notifier).start(
+                      restSeconds,
+                      exerciseName: notifInfo.exerciseName ?? 'Pause',
+                      nextExerciseName: notifInfo.nextExerciseName,
+                    );
                   },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -466,8 +471,11 @@ class _CompactInput extends StatelessWidget {
               ),
               isDense: true,
               filled: false,
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+              border: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.border.withValues(alpha: 0.3))),
+              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: c.accent)),
+              disabledBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             ),
             onChanged: onChanged,
           ),
