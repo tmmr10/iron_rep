@@ -211,7 +211,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
               String? nextSetInfo;
               if (nextSetIdx != -1) {
                 final weightStr = _currentWeight > 0
-                    ? ' · ${_currentWeight % 1 == 0 ? _currentWeight.toInt() : _currentWeight}kg'
+                    ? ' · ${(_currentWeight - _currentWeight.roundToDouble()).abs() < 0.01 ? _currentWeight.round() : _currentWeight.toStringAsFixed(1)}kg'
                     : '';
                 nextSetInfo = '${context.l10n.setOfTotal(nextSetIdx + 1, sets.length)}$weightStr';
               }
@@ -764,7 +764,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
     if (completedInCurrent < totalInCurrent) {
       // Show next set info with previous set's weight if available
       final nextSetWeight = _currentWeight > 0
-          ? ' · ${_currentWeight % 1 == 0 ? _currentWeight.toInt() : _currentWeight}kg'
+          ? ' · ${(_currentWeight - _currentWeight.roundToDouble()).abs() < 0.01 ? _currentWeight.round() : _currentWeight.toStringAsFixed(1)}kg'
           : '';
       nextName = 'Satz ${completedInCurrent + 1} von $totalInCurrent$nextSetWeight';
     } else {
@@ -821,7 +821,7 @@ class _GuidedWorkoutScreenState extends ConsumerState<GuidedWorkoutScreen> {
         .toList();
     if (weights.isEmpty) return null;
     weights.sort();
-    String fmt(double w) => w % 1 == 0 ? '${w.toInt()}' : '$w';
+    String fmt(double w) => (w - w.roundToDouble()).abs() < 0.01 ? '${w.round()}' : w.toStringAsFixed(1);
     if (weights.length == 1) {
       return '${fmt(weights.first)}kg';
     }

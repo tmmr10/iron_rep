@@ -164,7 +164,8 @@ final overallProgressProvider = FutureProvider.family<
     final firstDate = DateTime.fromMillisecondsSinceEpoch(firstDateEpoch * 1000);
     final totalDays = now.difference(firstDate).inDays;
     if (totalDays <= 0) {
-      return (volumeChange: 0.0, frequencyChange: 0.0, avgWeightChange: 0.0, hasPriorData: false);
+      // All workouts on the same day — treat as current data with no prior comparison
+      return (volumeChange: 0.0, frequencyChange: 0.0, avgWeightChange: 0.0, hasPriorData: true);
     }
     final halfDays = (totalDays / 2).ceil().clamp(1, totalDays);
     recentEnd = now;
@@ -323,12 +324,13 @@ final overallProgressProvider = FutureProvider.family<
       : await avgMaxWeight(priorStart, recentStart);
 
   final hasPriorData = priorVol > 0 || priorFreq > 0 || priorWeight > 0;
+  final hasAnyData = hasPriorData || recentVol > 0 || recentFreq > 0 || recentWeight > 0;
 
   return (
     volumeChange: pctChange(recentVol, priorVol),
     frequencyChange: pctChange(recentFreq, priorFreq),
     avgWeightChange: pctChange(recentWeight, priorWeight),
-    hasPriorData: hasPriorData,
+    hasPriorData: hasAnyData,
   );
 });
 
