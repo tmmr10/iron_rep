@@ -203,7 +203,7 @@ class _WorkoutImportScreenState extends ConsumerState<WorkoutImportScreen> {
                                   final j = entry.key + 1;
                                   final s = entry.value;
                                   final weight = s.weight != null
-                                      ? '${s.weight} kg'
+                                      ? '${_fmtWeight(s.weight!)} kg'
                                       : '-';
                                   final reps = s.reps != null
                                       ? '${s.reps} reps'
@@ -286,6 +286,9 @@ class _WorkoutImportScreenState extends ConsumerState<WorkoutImportScreen> {
     );
   }
 }
+
+String _fmtWeight(double w) =>
+    (w - w.roundToDouble()).abs() < 0.01 ? '${w.round()}' : w.toStringAsFixed(1);
 
 class _SummaryChip extends StatelessWidget {
   final IconData icon;

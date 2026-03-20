@@ -558,16 +558,14 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       shareableExercises,
     );
     final totalSets = _exercises.fold<int>(0, (s, e) => s + e.targetSets);
-    final exerciseLines = _exercises.asMap().entries.map((entry) {
-      final i = entry.key + 1;
-      final ex = entry.value;
-      return '$i. ${ex.name} — ${ex.targetSets} ${context.l10n.sets}';
+    final exerciseLines = _exercises.map((ex) {
+      return '• ${ex.name} — ${ex.targetSets} ${context.l10n.sets}';
     }).join('\n');
     final shareUrl = PlanSharingService.buildShareUrl(encoded);
     final message = '💪 $planName\n'
-        '${context.l10n.exercisesCount(_exercises.length, totalSets)}\n\n'
-        '$exerciseLines\n\n'
-        'Trainingsplan importieren:\n$shareUrl';
+        '${context.l10n.exercisesCount(_exercises.length, totalSets)}\n'
+        '$shareUrl\n\n'
+        '$exerciseLines';
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(
       message,

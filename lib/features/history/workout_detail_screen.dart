@@ -214,23 +214,17 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     final url = WorkoutSharingService.buildShareUrl(encoded);
 
     final exerciseLines = detail.exercises.map((ed) {
-      final setLines = ed.sets.asMap().entries.map((entry) {
-        final i = entry.key + 1;
-        final s = entry.value;
-        final weight = s.weight != null ? '${s.weight} kg' : '-';
-        final reps = s.reps != null ? '${s.reps} reps' : '-';
-        return '   $i. $weight × $reps';
-      }).join('\n');
-      return '${ed.exerciseName}\n$setLines';
-    }).join('\n\n');
+      final sets = ed.sets.map((s) {
+        final w = s.weight != null ? _fmtWeight(s.weight!) : '-';
+        return '$w×${s.reps ?? '-'}';
+      }).join(', ');
+      return '• ${ed.exerciseName}: $sets';
+    }).join('\n');
 
     final message = '💪 $name\n'
-        '📅 $date · ⏱ $duration\n'
-        '🏋️ ${detail.exercises.length} ${context.l10n.exercises} · '
-        '$totalSets ${context.l10n.sets} · '
-        '${totalVolume.round()} kg\n\n'
-        '$exerciseLines\n\n'
-        '$url';
+        '📅 $date · ⏱ $duration · ${totalVolume.round()} kg\n'
+        '$url\n\n'
+        '$exerciseLines';
 
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(
@@ -776,7 +770,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 style: TextStyle(color: c.textMuted)),
           ),
           Text(
-            '${s.weight?.toStringAsFixed(1) ?? '-'} kg × ${s.reps ?? '-'}',
+            '${s.weight != null ? _fmtWeight(s.weight!) : '-'} kg × ${s.reps ?? '-'}',
             style: TextStyle(
               color: s.isCompleted ? c.textPrimary : c.textMuted,
               fontWeight: FontWeight.w500,
@@ -1148,6 +1142,9 @@ class _ExerciseDetail {
   _ExerciseDetail(
       this.workoutExerciseId, this.exerciseId, this.exerciseName, this.sets);
 }
+
+String _fmtWeight(double w) =>
+    (w - w.roundToDouble()).abs() < 0.01 ? '${w.round()}' : w.toStringAsFixed(1);
 
 Future<_WorkoutDetail> _loadWorkoutDetail(
     AppDatabase db, int workoutId) async {
