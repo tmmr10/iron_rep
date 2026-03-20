@@ -11,6 +11,7 @@ import '../providers/settings_providers.dart';
 import '../providers/timer_providers.dart';
 import '../providers/workout_providers.dart';
 import '../services/plan_sharing_service.dart';
+import '../services/workout_sharing_service.dart';
 import '../services/timer_service.dart';
 import '../shared/design_system.dart';
 import 'router.dart';
@@ -20,14 +21,18 @@ final _deepLinkProvider = Provider<void>((ref) {
   final router = ref.watch(routerProvider);
 
   final sub = appLinks.uriLinkStream.listen((uri) {
-    if (uri.scheme == 'ironrep' &&
-        uri.pathSegments.isNotEmpty &&
-        uri.pathSegments.first == 'plan' &&
-        uri.pathSegments.length > 1) {
-      final data = uri.pathSegments[1];
-      final plan = PlanSharingService.decodePlan(data);
-      if (plan != null) {
-        router.go('/import-plan', extra: plan);
+    if (uri.scheme == 'ironrep' && uri.pathSegments.isNotEmpty) {
+      final data = uri.pathSegments.first;
+      if (uri.host == 'plan') {
+        final plan = PlanSharingService.decodePlan(data);
+        if (plan != null) {
+          router.go('/import-plan', extra: plan);
+        }
+      } else if (uri.host == 'workout') {
+        final workout = WorkoutSharingService.decodeWorkout(data);
+        if (workout != null) {
+          router.go('/import-workout', extra: workout);
+        }
       }
     }
   });

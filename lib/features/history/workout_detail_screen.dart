@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../database/app_database.dart';
 import '../../providers/database_provider.dart';
+import '../../services/workout_sharing_service.dart';
 import '../../shared/design_system.dart';
 import '../../shared/widgets/iron_card.dart';
 import '../../shared/widgets/tap_scale.dart';
@@ -116,7 +117,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                         Icon(Icons.ios_share, color: c.accent, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          context.l10n.sharePlan,
+                          context.l10n.shareWorkout,
                           style: TextStyle(
                             color: c.accent,
                             fontWeight: FontWeight.w600,
@@ -174,10 +175,43 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     int totalSets,
     double totalVolume,
   ) async {
+    final db = ref.read(databaseProvider);
     final w = detail.workout;
     final name = w.name ?? 'Workout';
     final date =
         '${w.startedAt.day}.${w.startedAt.month}.${w.startedAt.year}';
+
+    // Build shareable exercises with nameKey lookup
+    final shareableExercises = <ShareableWorkoutExercise>[];
+    for (final ed in detail.exercises) {
+      final exercise = await (db.select(db.exercises)
+            ..where((t) => t.id.equals(ed.exerciseId)))
+          .getSingle();
+      shareableExercises.add(ShareableWorkoutExercise(
+        nameKey: exercise.nameKey,
+        sets: ed.sets
+            .map((s) => ShareableSet(
+                  weight: s.weight,
+                  reps: s.reps,
+                  setType: s.setType != 'working' ? s.setType : null,
+                  durationSecs: s.durationSeconds,
+                ))
+            .toList(),
+        customName: exercise.isCustom ? exercise.name : null,
+        muscleGroup: exercise.isCustom ? exercise.primaryMuscleGroup : null,
+        category: exercise.isCustom ? exercise.category : null,
+      ));
+    }
+
+    final sharedWorkout = SharedWorkout(
+      version: 1,
+      name: name,
+      durationSeconds: w.durationSeconds,
+      exercises: shareableExercises,
+    );
+
+    final encoded = WorkoutSharingService.encodeWorkout(sharedWorkout);
+    final url = WorkoutSharingService.buildShareUrl(encoded);
 
     final exerciseLines = detail.exercises.map((ed) {
       final setLines = ed.sets.asMap().entries.map((entry) {
@@ -195,7 +229,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
         '🏋️ ${detail.exercises.length} ${context.l10n.exercises} · '
         '$totalSets ${context.l10n.sets} · '
         '${totalVolume.round()} kg\n\n'
-        '$exerciseLines';
+        '$exerciseLines\n\n'
+        '$url';
 
     final box = context.findRenderObject() as RenderBox?;
     await Share.share(

@@ -419,6 +419,10 @@
   "adLabel": "Ad",
   "reps": "Reps",
 
+  "shareWorkout": "Share workout",
+  "importWorkout": "Import workout",
+  "importWorkoutSuccess": "Workout imported",
+
   "backupData": "Data",
   "backupExport": "Export",
   "backupImport": "Import",

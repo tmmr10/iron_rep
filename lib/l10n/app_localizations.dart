@@ -1760,6 +1760,24 @@ abstract class AppLocalizations {
   /// **'Wiederholungen'**
   String get reps;
 
+  /// No description provided for @shareWorkout.
+  ///
+  /// In de, this message translates to:
+  /// **'Workout teilen'**
+  String get shareWorkout;
+
+  /// No description provided for @importWorkout.
+  ///
+  /// In de, this message translates to:
+  /// **'Workout importieren'**
+  String get importWorkout;
+
+  /// No description provided for @importWorkoutSuccess.
+  ///
+  /// In de, this message translates to:
+  /// **'Workout importiert'**
+  String get importWorkoutSuccess;
+
   /// No description provided for @backupData.
   ///
   /// In de, this message translates to:

@@ -896,6 +896,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reps => 'Reps';
 
   @override
+  String get shareWorkout => 'Share workout';
+
+  @override
+  String get importWorkout => 'Import workout';
+
+  @override
+  String get importWorkoutSuccess => 'Workout imported';
+
+  @override
   String get backupData => 'Data';
 
   @override

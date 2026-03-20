@@ -419,6 +419,10 @@
   "adLabel": "Werbung",
   "reps": "Wiederholungen",
 
+  "shareWorkout": "Workout teilen",
+  "importWorkout": "Workout importieren",
+  "importWorkoutSuccess": "Workout importiert",
+
   "backupData": "Daten",
   "backupExport": "Export",
   "backupImport": "Import",

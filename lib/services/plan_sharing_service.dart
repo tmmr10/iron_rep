@@ -91,7 +91,7 @@ class MatchedExercise {
 
 /// Converts a snake_case nameKey to Title Case display name.
 /// e.g. `bench_press` → `Bench Press`
-String _nameKeyToDisplayName(String nameKey) {
+String nameKeyToDisplayName(String nameKey) {
   return nameKey
       .split('_')
       .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
@@ -138,7 +138,7 @@ class PlanSharingService {
           displayName: ex.customName!,
         ));
       } else {
-        final generatedName = _nameKeyToDisplayName(ex.nameKey);
+        final generatedName = nameKeyToDisplayName(ex.nameKey);
         results.add(MatchedExercise(
           source: ex,
           status: ExerciseMatchStatus.createdCustom,
@@ -173,7 +173,7 @@ class PlanSharingService {
 
       if (existing == null) {
         // Create as custom exercise with name derived from nameKey
-        final generatedName = _nameKeyToDisplayName(ex.nameKey);
+        final generatedName = nameKeyToDisplayName(ex.nameKey);
         await db.exerciseDao.insertExercise(
           ExercisesCompanion.insert(
             name: generatedName,

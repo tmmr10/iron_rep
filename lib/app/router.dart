@@ -15,6 +15,8 @@ import '../features/plans/plan_import_screen.dart';
 import '../features/backup/backup_export_screen.dart';
 import '../features/backup/backup_import_screen.dart';
 import '../services/plan_sharing_service.dart';
+import '../services/workout_sharing_service.dart';
+import '../features/history/workout_import_screen.dart';
 import '../features/progress/progress_tab.dart';
 import '../features/progress/exercise_progress_screen.dart';
 import '../features/settings/settings_tab.dart';
@@ -28,6 +30,7 @@ import '../l10n/l10n_helper.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 SharedPlan? _pendingPlan;
+SharedWorkout? _pendingWorkout;
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Notifier that triggers router redirect re-evaluation when settings change.
@@ -50,6 +53,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Store plan in a static field for the import screen to pick up
           _pendingPlan = plan;
           return '/import-plan-pending';
+        }
+        return '/workout';
+      }
+
+      if (fullUri.startsWith('ironrep://workout/')) {
+        final data = fullUri.substring('ironrep://workout/'.length);
+        final workout = WorkoutSharingService.decodeWorkout(data);
+        if (workout != null) {
+          _pendingWorkout = workout;
+          return '/import-workout-pending';
         }
         return '/workout';
       }
@@ -193,6 +206,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
           }
           return PlanImportScreen(plan: plan);
+        },
+      ),
+      GoRoute(
+        path: '/import-workout',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final workout = state.extra as SharedWorkout;
+          return WorkoutImportScreen(workout: workout);
+        },
+      ),
+      GoRoute(
+        path: '/import-workout-pending',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final workout = _pendingWorkout;
+          _pendingWorkout = null;
+          if (workout == null) {
+            return Scaffold(
+              body: Center(child: Text(context.l10n.noPlanFound)),
+            );
+          }
+          return WorkoutImportScreen(workout: workout);
         },
       ),
       GoRoute(
